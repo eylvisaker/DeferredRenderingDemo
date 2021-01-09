@@ -13,7 +13,8 @@ texture NormalTexture;
 float4x4 WorldViewProjection;
 
 float4 PerspectiveValues;
-float4x4 ViewInv;
+float4x4 ViewProjectionInv;
+float3 EyePosition;
 
 float3 AmbientUpRange;
 float3 AmbientDown;
@@ -92,6 +93,7 @@ static const float2 g_SpecExpRange = { 0.1, 250.0 };
 struct Surface
 {
     float LinearDepth;
+    float Depth;
     float3 Color;
     float3 Normal;
     float SpecInt;
@@ -113,6 +115,7 @@ Surface UnpackGBuffer(float2 texCoords)
     float3 normal = tex2D(NormalSampler, texCoords).xyz;
     
     result.Color = color.xyz;
+    result.Depth = depth;
     result.LinearDepth = ConvertDepthToLinear(depth);
     result.Normal = normal * 2 - 1;
     result.SpecInt = 0;
@@ -151,8 +154,6 @@ Point_PixelShaderInput vs_PointLight(Point_VertexShaderInput input)
 ////  Pixel Shaders
 //////////////////////////////////////////////////////////////////////
 
-#define EyePosition ViewInv[3].xyz;
-
 struct Material
 {
     float3 normal;
@@ -173,15 +174,18 @@ Material CreateMaterial(Surface surface)
     return mat;
 }
 
-float3 CalcWorldPos(float2 csPos, float linearDepth)
+float3 CalcWorldPos(float2 csPos, float depth)
 {
     float4 position;
     
-    position.xy = csPos.xy * PerspectiveValues.xy * linearDepth;
-    position.z = linearDepth;
+    position.xy = csPos.xy;
+    position.z = depth;
     position.w = 1.0;
     
-    return mul(position, ViewInv).xyz;
+    float4 result = mul(position, ViewProjectionInv);
+    result /= result.w;
+
+    return result;
 }
 
 float3 CalcAmbient(float3 normal, float3 color)
@@ -258,7 +262,7 @@ float4 ps_PointLight(Point_PixelShaderInput input) : COLOR
     
     Surface surface = UnpackGBuffer(texCoord);
     Material mat = CreateMaterial(surface);
-    float3 position = CalcWorldPos(texCoord, surface.LinearDepth);
+    float3 position = CalcWorldPos(screenPos, surface.Depth);
     
     float4 finalColor;
     finalColor.xyz = CalcPointLight(position, mat);

@@ -23,6 +23,7 @@ namespace GBufferDemoLib
 
         public Color AmbientDown { get; set; } = new Color(20, 20, 20);
         public Color AmbientRange { get; set; } = new Color(60, 60, 60);
+        public Vector3 EyePosition { get; set; }
 
         public GBufferProcessor(GraphicsDevice graphics, GBuffer gbuffer)
         {
@@ -45,6 +46,7 @@ namespace GBufferDemoLib
         internal void Begin(Matrix view, Matrix projection)
         {
             this.viewProjection = view * projection;
+            Matrix viewProjectionInv = Matrix.Invert(viewProjection);
 
             InitializeFullScreen();
 
@@ -52,7 +54,9 @@ namespace GBufferDemoLib
 
             effect.Parameters["PerspectiveValues"].SetValue(new Vector4(
                 1 / projection.M11, 1 / projection.M22, projection.M43, -projection.M33));
-            effect.Parameters["ViewInv"].SetValue(Matrix.Invert(view));
+            // effect.Parameters["ViewInv"].SetValue(Matrix.Invert(view));
+            effect.Parameters["EyePosition"].SetValue(EyePosition);
+            effect.Parameters["ViewProjectionInv"].SetValue(viewProjectionInv);
 
             effect.ColorTexture = gbuffer.Color;
             effect.DepthTexture = gbuffer.Depth;

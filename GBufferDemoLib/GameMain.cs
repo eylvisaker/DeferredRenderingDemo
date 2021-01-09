@@ -17,7 +17,10 @@ namespace GBufferDemoLib
         private FillGBufferEffect gEffect;
         private ProcessGBufferEffect fEffect;
         private Texture2D surface;
+        private Texture2D white;
         private List<Light> lights = new List<Light>();
+
+        private bool rebuild = false;
 
         public bool OpenGL { get; set; }
 
@@ -64,12 +67,16 @@ namespace GBufferDemoLib
 
             buffer = new IcosahedronBuilder().CreateModel(GraphicsDevice);
             surface = Content.Load<Texture2D>("surface");
+            white = Content.Load<Texture2D>("white");
 
             gEffect = new FillGBufferEffect(Content.Load<Effect>("FillGBuffer"));
             fEffect = new ProcessGBufferEffect(Content.Load<Effect>("ProcessGBuffer"));
         }
 
         Vector3 rot;
+        private Vector3 eyePosition;
+        private Matrix view;
+        private Matrix projection;
 
         protected override void Update(GameTime gameTime)
         {
@@ -79,6 +86,11 @@ namespace GBufferDemoLib
             base.Update(gameTime);
 
             rot += 0.05f * new Vector3(1, 0.82f, 0.71f) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (Keyboard.GetState().IsKeyDown(Keys.Space))
+            {
+                rebuild = true;
+            }
         }
 
 
@@ -91,18 +103,28 @@ namespace GBufferDemoLib
             if (gEffect == null)
                 return;
 
-            bool rebuild = false;
-
             if (rebuild)
             {
                 buffer.Dispose();
                 buffer = new IcosahedronBuilder().CreateModel(GraphicsDevice);
 
                 InitLights();
+
+                rebuild = false;
             }
 
+            eyePosition = new Vector3(-25, -25, -25);
+
+            view = Matrix.CreateLookAt(eyePosition,
+                                       new Vector3(0, 0, 0),
+                                       new Vector3(0, 0, 1));
+            projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, 400);
+
+            InitLights();
+
+
             // Useful for debugging.
-            // BasicEffectDraw(graphics);
+            //BasicEffectDraw(graphics);
 
 
             GBufferDraw(graphics);
@@ -115,15 +137,26 @@ namespace GBufferDemoLib
             Random r = new Random();
 
             lights.Clear();
-            foreach (Vector3 pt in LatticePoints(0))
+
+            foreach (Vector3 pt in LatticePoints(10))
             {
+                Color clr = new Color((int)(150 + pt.X * 17) % 256, (int)(250 + pt.Y * 11) % 256, (int)(80 + pt.Z * 31) % 256, 255);
+
                 lights.Add(new Light
                 {
-                    Color = new Color((150 + pt.X * 40) % 256, (250 + pt.Y * 50) % 256, (80 + pt.Z * 60) % 256),
-                    Range = 20/* + (float)Math.Sin(rot.Z * 10) * 5*/,
-                    Position = pt + 5f * new Vector3((float)Math.Cos(rot.X + pt.X), (float)Math.Sin(rot.X + pt.X), 0),
-                    Intensity = 120/* + (float)Math.Cos(rot.X * 500 + pt.Length())*/,
+                    Color = clr,
+                    Range = 5 + (float)Math.Sin(rot.Z * 10 * pt.Z + pt.X) * 3,
+                    Position = pt + 2f * new Vector3((float)Math.Cos(40 * rot.X + pt.X), (float)Math.Sin(40 * rot.X + pt.Y), (float) Math.Cos(30 * rot.X + pt.Z)),
+                    Intensity = 10/* + (float)Math.Cos(rot.X * 500 + pt.Length())*/,
                 });
+
+                //lights.Add(new Light
+                //{
+                //    Color = new Color((150 + pt.X * 40) % 256, (250 + pt.Y * 50) % 256, (80 + pt.Z * 60) % 256),
+                //    Range = 5/* + (float)Math.Sin(rot.Z * 10) * 5*/,
+                //    Position = pt + new Vector3(2, 2, 2),
+                //    Intensity = 10/* + (float)Math.Cos(rot.X * 500 + pt.Length())*/,
+                //}); ;
             }
         }
 
@@ -132,12 +165,7 @@ namespace GBufferDemoLib
             graphics.DepthStencilState = DepthStencilState.Default;
             graphics.BlendState = BlendState.Opaque;
 
-            Matrix view = Matrix.CreateLookAt(new Vector3(-10, -10, -6),
-                                                new Vector3(0, 0, 0),
-                                                new Vector3(0, 0, 1));
-            Matrix projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, 1000);
-
-            InitLights();
+            gbufferProc.EyePosition = eyePosition;
 
             gEffect.ViewProjection = view * projection;
 
@@ -147,10 +175,10 @@ namespace GBufferDemoLib
 
             gbuffer.Complete();
 
-            gbufferProc.DirectionToLight = new Vector3((float)Math.Cos(rot.X * 100), (float)Math.Sin(rot.X * 100), 1);
-            gbufferProc.DirLightColor = Color.Black;
+            gbufferProc.DirectionToLight = new Vector3((float)Math.Cos(rot.X), (float)Math.Sin(rot.X), 1);
+            gbufferProc.DirLightColor = new Color(100, 80, 60);
             gbufferProc.AmbientDown = new Color(20, 30, 40);
-            gbufferProc.AmbientRange = new Color(40, 30, 20); 
+            gbufferProc.AmbientRange = new Color(80, 70, 60);
 
             gbufferProc.Begin(view, projection);
 
@@ -169,23 +197,41 @@ namespace GBufferDemoLib
 
             effect.CurrentTechnique = effect.Techniques["Textured"];
 
-            graphics.SamplerStates[0] = SamplerState.AnisotropicClamp;
-
             foreach (Vector3 pt in LatticePoints(10))
             {
-                gEffect.World = Matrix.CreateRotationX(rot.X * pt.X + pt.X) *
-                                Matrix.CreateRotationX(rot.Y * pt.Y + pt.Y) *
-                                Matrix.CreateRotationX(rot.Z * pt.Z + pt.Z) *
-                                Matrix.CreateTranslation(pt); // *
+                gEffect.World = Matrix.Identity *
+                                 // Matrix.CreateRotationX(rot.X * pt.X + pt.X) *
+                                 // Matrix.CreateRotationY(rot.Y * pt.Y + pt.Y) *
+                                 // Matrix.CreateRotationZ(rot.Z * pt.Z + pt.Z) *
+                                 Matrix.CreateTranslation(pt) *
                                 //Matrix.CreateRotationX(rot.X) *
-                                //Matrix.CreateRotationX(rot.Y) *
-                                //Matrix.CreateRotationX(rot.Z);
+                                //Matrix.CreateRotationY(rot.Y) *
+                                //Matrix.CreateRotationZ(rot.Z) *
+                                Matrix.Identity;
 
                 foreach (var pass in effect.CurrentTechnique.Passes)
                 {
                     pass.Apply();
 
                     graphics.Textures[0] = surface;
+                    graphics.SetVertexBuffer(buffer);
+                    graphics.DrawPrimitives(PrimitiveType.TriangleList, 0, buffer.VertexCount / 3);
+                }
+            }
+
+            foreach (Light light in lights)
+            {
+                gEffect.World = Matrix.CreateScale(0.1f) *
+                                Matrix.CreateTranslation(light.Position); // *
+                                                                          //Matrix.CreateRotationX(rot.X) *
+                                                                          //Matrix.CreateRotationX(rot.Y) *
+                                                                          //Matrix.CreateRotationX(rot.Z);
+
+                foreach (var pass in effect.CurrentTechnique.Passes)
+                {
+                    pass.Apply();
+
+                    graphics.Textures[0] = white;
                     graphics.SetVertexBuffer(buffer);
                     graphics.DrawPrimitives(PrimitiveType.TriangleList, 0, buffer.VertexCount / 3);
                 }
@@ -208,35 +254,38 @@ namespace GBufferDemoLib
 
         private void BasicEffectDraw(GraphicsDevice graphics)
         {
-            basicEffect.View = Matrix.CreateLookAt(new Vector3(-10, -10, 0),
-                                                   new Vector3(0, 0, 0),
-                                                   new Vector3(0, 0, 1));
-            basicEffect.Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, 1000);
+            graphics.BlendState = BlendState.Opaque;
+            graphics.DepthStencilState = DepthStencilState.Default;
+
+            graphics.Clear(Color.Blue);
+
+            basicEffect.View = view;
+            basicEffect.Projection = projection;
             basicEffect.TextureEnabled = true;
             basicEffect.LightingEnabled = false;
 
             basicEffect.Texture = surface;
 
-            for (int k = -10; k < 10; k++)
+            foreach (Vector3 pt in LatticePoints(1))
             {
-                for (int j = -10; j < 10; j++)
+                basicEffect.World = Matrix.Identity *
+                                 // Matrix.CreateRotationX(rot.X * pt.X + pt.X) *
+                                 // Matrix.CreateRotationY(rot.Y * pt.Y + pt.Y) *
+                                 // Matrix.CreateRotationZ(rot.Z * pt.Z + pt.Z) *
+                                 Matrix.CreateTranslation(pt.X + 4 * (float)Math.Sin(rot.X * 30 + pt.X), 
+                                                          pt.Y + 4 * (float)Math.Cos(rot.X * 30 + pt.Y), pt.Z) *
+                                //Matrix.CreateRotationX(rot.X) *
+                                //Matrix.CreateRotationY(rot.Y) *
+                                //Matrix.CreateRotationZ(rot.Z) *
+                                Matrix.Identity;
+
+                foreach (var pass in basicEffect.CurrentTechnique.Passes)
                 {
-                    for (int i = -10; i < 10; i++)
-                    {
-                        basicEffect.World = Matrix.CreateTranslation(50 * new Vector3(i, j, k)) *
-                            Matrix.CreateRotationX(rot.X) *
-                            Matrix.CreateRotationX(rot.Y) *
-                            Matrix.CreateRotationX(rot.Z);
+                    pass.Apply();
 
-                        foreach (var pass in basicEffect.CurrentTechnique.Passes)
-                        {
-                            pass.Apply();
-
-                            graphics.Textures[0] = surface;
-                            graphics.SetVertexBuffer(buffer);
-                            graphics.DrawPrimitives(PrimitiveType.TriangleList, 0, buffer.VertexCount / 3);
-                        }
-                    }
+                    graphics.Textures[0] = surface;
+                    graphics.SetVertexBuffer(buffer);
+                    graphics.DrawPrimitives(PrimitiveType.TriangleList, 0, buffer.VertexCount / 3);
                 }
             }
         }

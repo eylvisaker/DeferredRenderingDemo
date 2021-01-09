@@ -47,7 +47,7 @@ struct PixelShaderInput
     float4 Color : COLOR0;
     float3 Normal : NORMAL0;
     float2 TexCoords : TEXCOORD0;
-    float Depth : TEXCOORD1;
+    float2 Depth : TEXCOORD1;
 };
 
 struct PSOUT_GBuffer
@@ -131,9 +131,10 @@ PixelShaderInput vs_Textured(VertexShaderInput_Textured input)
     
     output.Position = pos;
     output.TexCoords = input.TexCoords;
-    output.Normal = mul(input.Normal, (float3x3) World);
+    output.Normal = mul(input.Normal, (float3x3)World);
     output.Color = float4(1, 1, 1, 1);
-    output.Depth.x = 1 - output.Position.z / output.Position.w;
+    output.Depth.x = pos.z;
+    output.Depth.y = pos.w;
 
     return output;
 }
@@ -148,7 +149,8 @@ PixelShaderInput vs_Sprite(VertexShaderInput_Sprite input)
     output.TexCoords = input.TexCoords;
     output.Normal = SpriteNormal;
     output.Color = input.Color;
-    output.Depth.x = 1 - output.Position.z / output.Position.w;
+    output.Depth.x = pos.z;
+    output.Depth.y = pos.w;
 
     return output;
 }
@@ -157,13 +159,14 @@ PixelShaderInput vs_Sprite(VertexShaderInput_Sprite input)
 ////  Pixel Shaders
 //////////////////////////////////////////////////////////////////////
 
-PSOUT_GBuffer packGBuffer(float4 color, float3 normal, float depth)
+PSOUT_GBuffer packGBuffer(float4 color, float3 normal, float2 depth)
 {
     PSOUT_GBuffer result;
-
+    float d = depth.x / depth.y;
+    
     result.Color = color;
-    result.Depth = float4(depth, depth, depth, 1);
-    result.Normal = float4(normalize(normal).xyz * 0.5 + 0.5, 1);
+    result.Depth = float4(d, d, d, 1);
+    result.Normal = float4(0.5 * (normalize(normal).xyz + 1), 1);
 
     return result;
 }

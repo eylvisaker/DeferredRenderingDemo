@@ -73,8 +73,8 @@ namespace GBufferDemoLib
                 BuildTriangle(vertices,
                               vertexIndices[startIndex] - 1,
                               v[vertexIndices[startIndex + 1]],
-                              v[vertexIndices[startIndex + 2]],
-                              v[vertexIndices[startIndex + 3]]);
+                              v[vertexIndices[startIndex + 3]],
+                              v[vertexIndices[startIndex + 2]]);
             }
 
 
@@ -89,7 +89,7 @@ namespace GBufferDemoLib
         {
             Vector3 ba = b - a;
             Vector3 ca = c - a;
-            Vector3 normal = Vector3.Cross(ba, ca);
+            Vector3 normal = Vector3.Cross(ca, ba);
             
             normal.Normalize();
 
