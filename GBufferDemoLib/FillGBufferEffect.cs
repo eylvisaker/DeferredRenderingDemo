@@ -15,6 +15,7 @@ namespace GBufferDemoLib
         private EffectParameter p_PreserveColor;
         private EffectParameter p_PreserveColorAngle;
         private EffectParameter p_DiffuseTexture;
+        private EffectParameter p_NormalMapTexture;
         private Matrix world, viewProjection;
 
         public FillGBufferEffect(Effect effect)
@@ -30,6 +31,7 @@ namespace GBufferDemoLib
             p_PreserveColor = effect.Parameters["PreserveColor"];
             p_PreserveColorAngle = effect.Parameters["PreserveColorAngle"];
             p_DiffuseTexture = effect.Parameters["DiffuseTexture"];
+            p_NormalMapTexture = effect.Parameters["NormalMapTexture"];
         }
 
         public int ApplyDesat
@@ -65,6 +67,12 @@ namespace GBufferDemoLib
         {
             get => p_DiffuseTexture.GetValueTexture2D();
             set => p_DiffuseTexture.SetValue(value);
+        }
+
+        public Texture2D NormalMapTexture
+        {
+            get => p_NormalMapTexture.GetValueTexture2D();
+            set => p_NormalMapTexture.SetValue(value);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using GBufferDemoLib.Geometry;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
@@ -17,10 +18,12 @@ namespace GBufferDemoLib
         private FillGBufferEffect gEffect;
         private ProcessGBufferEffect fEffect;
         private Texture2D surface;
+        private Texture2D surfaceNormalMap;
         private Texture2D white;
         private List<Light> lights = new List<Light>();
 
         private bool rebuild = false;
+        private int technique;
 
         public bool OpenGL { get; set; }
 
@@ -65,8 +68,9 @@ namespace GBufferDemoLib
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            buffer = new IcosahedronBuilder().CreateModel(GraphicsDevice);
+            buffer = new TexturedIcosahedronBuilder().CreateModel(GraphicsDevice);
             surface = Content.Load<Texture2D>("surface");
+            surfaceNormalMap = Content.Load<Texture2D>("surface-normalmap");
             white = Content.Load<Texture2D>("white");
 
             gEffect = new FillGBufferEffect(Content.Load<Effect>("FillGBuffer"));
@@ -77,6 +81,8 @@ namespace GBufferDemoLib
         private Vector3 eyePosition;
         private Matrix view;
         private Matrix projection;
+        private KeyboardState lastKeyboard;
+        private int latticeSize = 5;
 
         protected override void Update(GameTime gameTime)
         {
@@ -87,12 +93,38 @@ namespace GBufferDemoLib
 
             rot += 0.05f * new Vector3(1, 0.82f, 0.71f) * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            if (Keyboard.GetState().IsKeyDown(Keys.Space))
+            KeyboardState keyboard = Keyboard.GetState();
+
+            if (KeyReleased(ref keyboard, Keys.Space))
             {
                 rebuild = true;
             }
+            if (KeyReleased(ref keyboard, Keys.D1))
+            {
+                technique = 0;
+            }
+            if (KeyReleased(ref keyboard, Keys.D2))
+            {
+                technique = 1;
+            }
+            if (KeyReleased(ref keyboard, Keys.OemPlus))
+            {
+                latticeSize++;
+                rebuild = true;
+            }
+            if (KeyReleased(ref keyboard, Keys.OemMinus))
+            {
+                latticeSize = Math.Max(0, latticeSize - 1);
+                rebuild = true;
+            }
+
+            lastKeyboard = keyboard;
         }
 
+        private bool KeyReleased(ref KeyboardState keyboard, Keys key)
+        {
+            return (lastKeyboard.IsKeyDown(key) && !keyboard.IsKeyDown(key));
+        }
 
         protected override void Draw(GameTime gameTime)
         {
@@ -106,14 +138,14 @@ namespace GBufferDemoLib
             if (rebuild)
             {
                 buffer.Dispose();
-                buffer = new IcosahedronBuilder().CreateModel(GraphicsDevice);
+                buffer = new BumpMappedIcosahedronBuilder().CreateModel(GraphicsDevice);
 
                 InitLights();
 
                 rebuild = false;
             }
 
-            eyePosition = new Vector3(-25, -25, -25);
+            eyePosition = new Vector3(-10, -10, -6) * 4;
 
             view = Matrix.CreateLookAt(eyePosition,
                                        new Vector3(0, 0, 0),
@@ -138,7 +170,7 @@ namespace GBufferDemoLib
 
             lights.Clear();
 
-            foreach (Vector3 pt in LatticePoints(10))
+            foreach (Vector3 pt in LatticePoints(latticeSize))
             {
                 Color clr = new Color((int)(150 + pt.X * 17) % 256, (int)(250 + pt.Y * 11) % 256, (int)(80 + pt.Z * 31) % 256, 255);
                 float phi = 40 * rot.X + pt.X + 10 * (rot.Y + pt.Y);
@@ -146,18 +178,10 @@ namespace GBufferDemoLib
                 lights.Add(new Light
                 {
                     Color = clr,
-                    Range = 15 + (float)Math.Sin(rot.Z * 10 * pt.Z + pt.X) * 3,
+                    Range = 9 + (float)Math.Sin(rot.Z * 10 * pt.Z + pt.X) * 3,
                     Position = pt + 2f * new Vector3((float)Math.Cos(phi), (float)Math.Sin(phi), (float) Math.Cos(30 * rot.X + pt.Z)),
-                    Intensity = 2/* + (float)Math.Cos(rot.X * 500 + pt.Length())*/,
+                    Intensity = 4/* + (float)Math.Cos(rot.X * 500 + pt.Length())*/,
                 });
-
-                //lights.Add(new Light
-                //{
-                //    Color = new Color((150 + pt.X * 40) % 256, (250 + pt.Y * 50) % 256, (80 + pt.Z * 60) % 256),
-                //    Range = 5/* + (float)Math.Sin(rot.Z * 10) * 5*/,
-                //    Position = pt + new Vector3(2, 2, 2),
-                //    Intensity = 10/* + (float)Math.Cos(rot.X * 500 + pt.Length())*/,
-                //}); ;
             }
         }
 
@@ -191,14 +215,25 @@ namespace GBufferDemoLib
 
         private void RenderGeometry(GraphicsDevice graphics)
         {
-            gEffect.ApplyDesat = 0;
+            // gEffect.ApplyDesat = 0;
             gEffect.DiffuseTexture = surface;
+            gEffect.NormalMapTexture = surfaceNormalMap;
 
             var effect = gEffect.Effect;
 
-            effect.CurrentTechnique = effect.Techniques["Textured"];
+            switch (technique)
+            {
+                case 1:
+                    effect.CurrentTechnique = effect.Techniques["Bumped"];
+                    break;
+                case 0:
+                default:
+                    effect.CurrentTechnique = effect.Techniques["Textured"];
+                    break;
+            }
 
-            foreach (Vector3 pt in LatticePoints(10))
+
+            foreach (Vector3 pt in LatticePoints(latticeSize))
             {
                 gEffect.World = Matrix.Identity *
                                   Matrix.CreateRotationX(rot.X * pt.X + pt.X) *

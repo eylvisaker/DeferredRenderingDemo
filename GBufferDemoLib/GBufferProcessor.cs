@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using GBufferDemoLib.Geometry;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -33,8 +34,9 @@ namespace GBufferDemoLib
             fullScreen = new VertexPositionTexture[4];
             fullScreenIndices = new[] { 0, 1, 3, 1, 2, 3 };
 
-            icosahedron = new IcosahedronBuilder().CreateModel(graphics);
+            icosahedron = new TexturedIcosahedronBuilder().CreateModel(graphics);
         }
+
         private void InitializeFullScreen()
         {
             fullScreen[0] = new VertexPositionTexture(new Vector3(-1, -1, 0), new Vector2(0, 1));
@@ -95,7 +97,7 @@ namespace GBufferDemoLib
             var screenRange = Vector4.Transform(new Vector4(new Vector3(light.Range), 0), viewProjection);
 
             effect.CurrentTechnique = effect.Techniques["PointLight"];
-            effect.Parameters["WorldViewProjection"].SetValue(Matrix.CreateScale(light.Range) * Matrix.CreateTranslation(light.Position) * viewProjection);
+            effect.Parameters["WorldViewProjection"].SetValue(Matrix.CreateScale(light.Range * 1.2f) * Matrix.CreateTranslation(light.Position) * viewProjection);
 
             foreach (var pass in effect.CurrentTechnique.Passes)
             {
