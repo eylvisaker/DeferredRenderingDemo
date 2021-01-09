@@ -1,0 +1,44 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30804.86
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GBufferDemoLib", "GBufferDemoLib\GBufferDemoLib.csproj", "{B147D775-4770-4FAC-8D2B-EE7A3DECE651}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GBufferDemoDesktopGL", "GBufferDemoDesktopGL\GBufferDemoDesktopGL.csproj", "{B32E9C7B-2B28-4158-B803-72BEFE1D0268}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GBufferDemoWindowsDX", "GBufferDemoWindowsDX\GBufferDemoWindowsDX.csproj", "{F9F2D75D-1BAB-43ED-B13D-5C871A7C2444}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "GBufferDemo.Content", "GBufferDemo.Content\GBufferDemo.Content.shproj", "{A0CDBD0E-3A41-42B7-9425-A838BC2C7383}"
+EndProject
+Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		GBufferDemo.Content\GBufferDemo.Content.projitems*{a0cdbd0e-3a41-42b7-9425-a838bc2c7383}*SharedItemsImports = 13
+		GBufferDemo.Content\GBufferDemo.Content.projitems*{b32e9c7b-2b28-4158-b803-72befe1d0268}*SharedItemsImports = 5
+		GBufferDemo.Content\GBufferDemo.Content.projitems*{f9f2d75d-1bab-43ed-b13d-5c871a7c2444}*SharedItemsImports = 5
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B147D775-4770-4FAC-8D2B-EE7A3DECE651}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B147D775-4770-4FAC-8D2B-EE7A3DECE651}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B147D775-4770-4FAC-8D2B-EE7A3DECE651}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B147D775-4770-4FAC-8D2B-EE7A3DECE651}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B32E9C7B-2B28-4158-B803-72BEFE1D0268}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B32E9C7B-2B28-4158-B803-72BEFE1D0268}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B32E9C7B-2B28-4158-B803-72BEFE1D0268}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B32E9C7B-2B28-4158-B803-72BEFE1D0268}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9F2D75D-1BAB-43ED-B13D-5C871A7C2444}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9F2D75D-1BAB-43ED-B13D-5C871A7C2444}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9F2D75D-1BAB-43ED-B13D-5C871A7C2444}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9F2D75D-1BAB-43ED-B13D-5C871A7C2444}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {97276AC5-99F7-43AD-BCF5-953923810C9C}
+	EndGlobalSection
+EndGlobal
