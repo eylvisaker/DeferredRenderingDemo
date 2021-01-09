@@ -2,7 +2,7 @@
 
 namespace GBufferDemoLib
 {
-    internal class ProcessGBufferEffect : Effect
+    public class ProcessGBufferEffect : Effect
     {
         private EffectParameter p_ColorTexture;
         private EffectParameter p_DepthTexture;
