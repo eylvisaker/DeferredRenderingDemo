@@ -141,13 +141,14 @@ namespace GBufferDemoLib
             foreach (Vector3 pt in LatticePoints(10))
             {
                 Color clr = new Color((int)(150 + pt.X * 17) % 256, (int)(250 + pt.Y * 11) % 256, (int)(80 + pt.Z * 31) % 256, 255);
+                float phi = 40 * rot.X + pt.X + 10 * (rot.Y + pt.Y);
 
                 lights.Add(new Light
                 {
                     Color = clr,
-                    Range = 5 + (float)Math.Sin(rot.Z * 10 * pt.Z + pt.X) * 3,
-                    Position = pt + 2f * new Vector3((float)Math.Cos(40 * rot.X + pt.X), (float)Math.Sin(40 * rot.X + pt.Y), (float) Math.Cos(30 * rot.X + pt.Z)),
-                    Intensity = 10/* + (float)Math.Cos(rot.X * 500 + pt.Length())*/,
+                    Range = 15 + (float)Math.Sin(rot.Z * 10 * pt.Z + pt.X) * 3,
+                    Position = pt + 2f * new Vector3((float)Math.Cos(phi), (float)Math.Sin(phi), (float) Math.Cos(30 * rot.X + pt.Z)),
+                    Intensity = 2/* + (float)Math.Cos(rot.X * 500 + pt.Length())*/,
                 });
 
                 //lights.Add(new Light
@@ -200,9 +201,9 @@ namespace GBufferDemoLib
             foreach (Vector3 pt in LatticePoints(10))
             {
                 gEffect.World = Matrix.Identity *
-                                 // Matrix.CreateRotationX(rot.X * pt.X + pt.X) *
-                                 // Matrix.CreateRotationY(rot.Y * pt.Y + pt.Y) *
-                                 // Matrix.CreateRotationZ(rot.Z * pt.Z + pt.Z) *
+                                  Matrix.CreateRotationX(rot.X * pt.X + pt.X) *
+                                  Matrix.CreateRotationY(rot.Y * pt.Y + pt.Y) *
+                                  Matrix.CreateRotationZ(rot.Z * pt.Z + pt.Z) *
                                  Matrix.CreateTranslation(pt) *
                                 //Matrix.CreateRotationX(rot.X) *
                                 //Matrix.CreateRotationY(rot.Y) *
