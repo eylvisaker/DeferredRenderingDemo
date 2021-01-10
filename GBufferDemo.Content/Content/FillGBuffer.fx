@@ -48,6 +48,12 @@ struct VertexShaderInput_Sprite
 {
     float4 Position : POSITION;
     float2 TexCoords : TEXCOORD0;
+};
+
+struct VertexShaderInput_ColoredSprite
+{
+    float4 Position : POSITION;
+    float2 TexCoords : TEXCOORD0;
     float4 Color : COLOR0;
 };
 
@@ -158,6 +164,22 @@ static const float Epsilon = 1e-10;
 //////////////////////////////////////////////////////////////////////
 
 PSIN_Textured vs_Sprite(VertexShaderInput_Sprite input)
+{
+    PSIN_Textured output;
+
+    float4 pos = mul(input.Position, WorldViewProjection);
+    
+    output.Position = pos;
+    output.TexCoords = input.TexCoords;
+    output.Normal = SpriteNormal;
+    output.Color = float4(1, 1, 1, 1);
+    output.Depth.x = pos.z;
+    output.Depth.y = pos.w;
+
+    return output;
+}
+
+PSIN_Textured vs_ColoredSprite(VertexShaderInput_ColoredSprite input)
 {
     PSIN_Textured output;
 
@@ -326,14 +348,14 @@ PSOUT_GBuffer ps_Bumped(PSIN_Bumped input)
 ////  Techniques
 ////////////////////////////////////////////////////////////////////////////
 
-//technique Sprite
-//{
-//    pass Pass1
-//    {
-//        VertexShader = compile VSMODEL vs_Sprite();
-//        PixelShader = compile PSMODEL ps_Sprite();
-//    }
-//}
+technique Sprite
+{
+    pass Pass1
+    {
+        VertexShader = compile VSMODEL vs_Sprite();
+        PixelShader = compile PSMODEL ps_Sprite();
+    }
+}
 
 technique Textured
 {
