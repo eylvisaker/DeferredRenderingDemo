@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace GBufferDemoLib
 {
-    public class FillGBufferEffect
+    public class FillGBufferEffect: Effect
     {
         private Effect effect;
         private EffectParameter p_WorldViewProjection;
@@ -16,9 +16,12 @@ namespace GBufferDemoLib
         private EffectParameter p_PreserveColorAngle;
         private EffectParameter p_DiffuseTexture;
         private EffectParameter p_NormalMapTexture;
+        private EffectTechnique t_Sprite;
+        private EffectTechnique t_Textured;
+        private EffectTechnique t_BumpMapped;
         private Matrix world, viewProjection;
 
-        public FillGBufferEffect(Effect effect)
+        public FillGBufferEffect(Effect effect) : base(effect)
         {
             this.effect = effect;
 
@@ -32,7 +35,20 @@ namespace GBufferDemoLib
             p_PreserveColorAngle = effect.Parameters["PreserveColorAngle"];
             p_DiffuseTexture = effect.Parameters["DiffuseTexture"];
             p_NormalMapTexture = effect.Parameters["NormalMapTexture"];
+
+            t_Sprite = effect.Techniques["Sprite"];
+            t_Textured = effect.Techniques["Textured"];
+            t_BumpMapped = effect.Techniques["Bumped"];
+
         }
+
+        /// <summary>
+        /// Technique for vertex data which includes only position and texture coords.
+        /// The default normal is applied.
+        /// </summary>
+        public EffectTechnique TechniqueSprite => t_Sprite;
+        public EffectTechnique TechniqueTextured => t_Textured;
+        public EffectTechnique TechniqueBumpMapped => t_BumpMapped;
 
         public int ApplyDesat
         {

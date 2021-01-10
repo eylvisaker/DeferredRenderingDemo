@@ -24,7 +24,7 @@ public RenderTarget2D Color => color;
             Rebuild();
         }
 
-        internal void Bind()
+        internal void Begin()
         {
             graphics.SetRenderTargets(color, depth, normal);
         }

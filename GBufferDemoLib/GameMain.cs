@@ -10,7 +10,6 @@ namespace GBufferDemoLib
     public class GameMain : Game
     {
         private GraphicsDeviceManager _graphics;
-        private SpriteBatch _spriteBatch;
         private GBuffer gbuffer;
         private GBufferProcessor gbufferProc;
         private BasicEffect basicEffect;
@@ -20,7 +19,9 @@ namespace GBufferDemoLib
         private Texture2D surface;
         private Texture2D surfaceNormalMap;
         private Texture2D white;
+        private Skybox skybox;
         private List<Light> lights = new List<Light>();
+        private Player player = new Player();
 
         private bool rebuild = false;
         private int technique;
@@ -66,12 +67,11 @@ namespace GBufferDemoLib
 
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
-
             buffer = new TexturedIcosahedronBuilder().CreateModel(GraphicsDevice);
             surface = Content.Load<Texture2D>("surface");
             surfaceNormalMap = Content.Load<Texture2D>("surface-normalmap");
             white = Content.Load<Texture2D>("white");
+            skybox = new Skybox(GraphicsDevice, Content);
 
             gEffect = new FillGBufferEffect(Content.Load<Effect>("FillGBuffer"));
             fEffect = new ProcessGBufferEffect(Content.Load<Effect>("ProcessGBuffer"));
@@ -83,6 +83,7 @@ namespace GBufferDemoLib
         private Matrix projection;
         private KeyboardState lastKeyboard;
         private int latticeSize = 5;
+        Vector3 DirectionToSun => new Vector3((float)Math.Cos(rot.X), (float)Math.Sin(rot.X), 1);
 
         protected override void Update(GameTime gameTime)
         {
@@ -90,6 +91,8 @@ namespace GBufferDemoLib
                 Exit();
 
             base.Update(gameTime);
+
+            player.Update(gameTime, GamePad.GetState(PlayerIndex.One));
 
             rot += 0.05f * new Vector3(1, 0.82f, 0.71f) * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
@@ -145,12 +148,12 @@ namespace GBufferDemoLib
                 rebuild = false;
             }
 
-            eyePosition = new Vector3(-10, -10, -6) * 4;
+            eyePosition = player.Position;
 
             view = Matrix.CreateLookAt(eyePosition,
-                                       new Vector3(0, 0, 0),
-                                       new Vector3(0, 0, 1));
-            projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, 400);
+                                       player.Position + player.Facing,
+                                       player.Up);
+            projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, 900);
 
             InitLights();
 
@@ -194,13 +197,13 @@ namespace GBufferDemoLib
 
             gEffect.ViewProjection = view * projection;
 
-            gbuffer.Bind();
+            gbuffer.Begin();
 
             RenderGeometry(graphics);
 
             gbuffer.Complete();
 
-            gbufferProc.DirectionToLight = new Vector3((float)Math.Cos(rot.X), (float)Math.Sin(rot.X), 1);
+            gbufferProc.DirectionToLight = DirectionToSun;
             gbufferProc.DirLightColor = new Color(100, 80, 60);
             gbufferProc.AmbientDown = new Color(20, 30, 40);
             gbufferProc.AmbientRange = new Color(80, 70, 60);
