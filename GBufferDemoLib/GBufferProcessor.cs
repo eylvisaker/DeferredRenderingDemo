@@ -63,6 +63,7 @@ namespace GBufferDemoLib
             effect.ColorTexture = gbuffer.Color;
             effect.DepthTexture = gbuffer.Depth;
             effect.NormalTexture = gbuffer.Normal;
+            effect.SpecularTexture = gbuffer.Specular;
 
             DirectionToLight.Normalize();
 

@@ -250,6 +250,9 @@ namespace GBufferDemoLib
                                 //Matrix.CreateRotationZ(rot.Z) *
                                 Matrix.Identity;
 
+                gEffect.SpecularExponent = 4;
+                gEffect.SpecularIntensity = 0.9f;
+
                 foreach (var pass in effect.CurrentTechnique.Passes)
                 {
                     pass.Apply();

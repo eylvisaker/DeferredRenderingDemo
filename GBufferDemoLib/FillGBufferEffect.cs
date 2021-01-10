@@ -17,6 +17,8 @@ namespace GBufferDemoLib
         private EffectParameter p_DiffuseTexture;
         private EffectParameter p_NormalMapTexture;
         private EffectParameter p_Emissive;
+        private EffectParameter p_SpecularExponent;
+        private EffectParameter p_SpecularIntensity;
         private EffectTechnique t_Sprite;
         private EffectTechnique t_Textured;
         private EffectTechnique t_BumpMapped;
@@ -37,6 +39,8 @@ namespace GBufferDemoLib
             p_DiffuseTexture = effect.Parameters["DiffuseTexture"];
             p_NormalMapTexture = effect.Parameters["NormalMapTexture"];
             p_Emissive = effect.Parameters["Emissive"];
+            p_SpecularExponent = effect.Parameters["SpecularExponent"];
+            p_SpecularIntensity = effect.Parameters["SpecularIntensity"];
 
             t_Sprite = effect.Techniques["Sprite"];
             t_Textured = effect.Techniques["Textured"];
@@ -66,6 +70,18 @@ namespace GBufferDemoLib
         {
             get => p_ApplyDesat.GetValueInt32();
             set => p_ApplyDesat.SetValue(value);
+        }
+
+        public float SpecularExponent
+        {
+            get => p_SpecularExponent.GetValueSingle();
+            set => p_SpecularExponent.SetValue(value);
+        }
+
+        public float SpecularIntensity
+        {
+            get => p_SpecularIntensity.GetValueSingle();
+            set => p_SpecularIntensity.SetValue(value);
         }
 
         public Matrix ViewProjection

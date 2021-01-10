@@ -20,12 +20,14 @@ float PreserveColor;
 float PreserveColorAngle;
 
 ////////////////////////////////
-// Texture Parameters
+// Texture/Material Parameters
 ////////////////////////////////
 texture DiffuseTexture;
 texture NormalMapTexture;
 
 float Emissive;
+float SpecularExponent;
+float SpecularIntensity;
 
 ////////////////////////////////
 // Vertex Inputs
@@ -97,6 +99,7 @@ struct PSOUT_GBuffer
     float4 Color : COLOR0;
     float4 Depth : COLOR1;
     float4 Normal : COLOR2;
+    float4 Spec : COLOR3;
 };
 
 struct PSOUT_Color
@@ -108,7 +111,7 @@ struct PSOUT_Color
 //// Functions
 /////////////////////////////
 
-static const float Epsilon = 1e-10;
+static const float epsilon = 1e-10;
 
 //float3 RGBtoHCV(in float3 RGB)
 //{
@@ -116,14 +119,14 @@ static const float Epsilon = 1e-10;
 //    float4 P = (RGB.g < RGB.b) ? float4(RGB.bg, -1.0, 2.0/3.0) : float4(RGB.gb, 0.0, -1.0/3.0);
 //    float4 Q = (RGB.r < P.x) ? float4(P.xyw, RGB.r) : float4(RGB.r, P.yzx);
 //    float C = Q.x - min(Q.w, Q.y);
-//    float H = abs((Q.w - Q.y) / (6 * C + Epsilon) + Q.z);
+//    float H = abs((Q.w - Q.y) / (6 * C + epsilon) + Q.z);
 //    return float3(H, C, Q.x);
 //}
 
 //float3 RGBtoHSV(in float3 RGB)
 //{
 //    float3 HCV = RGBtoHCV(RGB);
-//    float S = HCV.y / (HCV.z + Epsilon);
+//    float S = HCV.y / (HCV.z + epsilon);
 //    return float3(HCV.x, S, HCV.z);
 //}
 
@@ -235,15 +238,21 @@ PSIN_Bumped vs_Bumped(VertexShaderInput_Bumped input)
 ////  Pixel Shaders
 //////////////////////////////////////////////////////////////////////
 
+// This must match the same named constants in ProcessGBuffer.fx
+static const float2 g_SpecExpRange = { 0.1, 250.0 };
+
 PSOUT_GBuffer packGBuffer(float4 color, float3 normal, float2 depth)
 {
     PSOUT_GBuffer result;
     float d = depth.x / depth.y;
     
+    float normedSpecExp = (SpecularExponent - g_SpecExpRange.x) / g_SpecExpRange.y;
+    
     result.Color = float4(color.rgb, Emissive);
     result.Depth = d;
     result.Normal = float4(0.5 * (normalize(normal).xyz + 1), 1);
-
+    result.Spec = float4(normedSpecExp, SpecularIntensity, 0, 0);// what do to with last two?
+    
     return result;
 }
 

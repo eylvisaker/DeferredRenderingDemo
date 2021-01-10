@@ -9,6 +9,7 @@
 texture ColorTexture;
 texture DepthTexture;
 texture NormalTexture;
+texture SpecularTexture;
 
 float4x4 WorldViewProjection;
 
@@ -84,10 +85,21 @@ sampler NormalSampler = sampler_state
     Mipfilter = POINT;
 };
 
+sampler SpecularSampler = sampler_state
+{
+    Texture = <SpecularTexture>;
+    AddressU = CLAMP;
+    AddressV = CLAMP;
+    MagFilter = POINT;
+    MinFilter = POINT;
+    Mipfilter = POINT;
+};
+
 //////////////////////////////////////////////////////////////////////
 ////  Reading the GBuffer
 //////////////////////////////////////////////////////////////////////
 
+// This must match the same named constants in FillGBuffer.fx
 static const float2 g_SpecExpRange = { 0.1, 250.0 };
 
 struct Surface
@@ -114,14 +126,15 @@ Surface UnpackGBuffer(float2 texCoords)
     float4 color = tex2D(ColorSampler, texCoords);
     float depth = tex2D(DepthSampler, texCoords).x;
     float3 normal = tex2D(NormalSampler, texCoords).xyz;
+    float2 specular = tex2D(SpecularSampler, texCoords).xy;
     
     result.Color = color.xyz;
     result.Emissive = color.a;
     result.Depth = depth;
     result.LinearDepth = ConvertDepthToLinear(depth);
     result.Normal = normal * 2 - 1;
-    result.SpecInt = 0;
-    result.SpecPow = 0;
+    result.SpecPow = specular.x;
+    result.SpecInt = specular.y;
     
     return result;
 }
