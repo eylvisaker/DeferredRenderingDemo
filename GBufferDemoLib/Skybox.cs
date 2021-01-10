@@ -38,22 +38,11 @@ namespace GBufferDemoLib
             }
         }
 
-        public void Draw(FillGBufferEffect gEffect)
-        {
-        }
-
-        internal void Draw(Vector3 position)
+        public void Draw(Vector3 position)
         {
             graphics.RasterizerState = RasterizerState.CullNone;
 
-            foreach (var mesh in model.Meshes)
-            {
-                foreach (var part in mesh.MeshParts)
-                {
-                    part.Effect = Effect;
-                }
-            }
-
+            Effect.Emissive = 1;
             Effect.DiffuseTexture = texture;
             Effect.CurrentTechnique = Effect.TechniqueSprite;
             Effect.World = Matrix.CreateRotationX(MathHelper.PiOver2)
@@ -63,6 +52,10 @@ namespace GBufferDemoLib
             {
                 mesh.Draw();
             }
+
+            Effect.Emissive = 0;
+
+            graphics.RasterizerState = RasterizerState.CullCounterClockwise;
         }
     }
 }

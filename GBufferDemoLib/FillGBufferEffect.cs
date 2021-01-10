@@ -16,6 +16,7 @@ namespace GBufferDemoLib
         private EffectParameter p_PreserveColorAngle;
         private EffectParameter p_DiffuseTexture;
         private EffectParameter p_NormalMapTexture;
+        private EffectParameter p_Emissive;
         private EffectTechnique t_Sprite;
         private EffectTechnique t_Textured;
         private EffectTechnique t_BumpMapped;
@@ -35,11 +36,11 @@ namespace GBufferDemoLib
             p_PreserveColorAngle = effect.Parameters["PreserveColorAngle"];
             p_DiffuseTexture = effect.Parameters["DiffuseTexture"];
             p_NormalMapTexture = effect.Parameters["NormalMapTexture"];
+            p_Emissive = effect.Parameters["Emissive"];
 
             t_Sprite = effect.Techniques["Sprite"];
             t_Textured = effect.Techniques["Textured"];
             t_BumpMapped = effect.Techniques["Bumped"];
-
         }
 
         /// <summary>
@@ -49,6 +50,17 @@ namespace GBufferDemoLib
         public EffectTechnique TechniqueSprite => t_Sprite;
         public EffectTechnique TechniqueTextured => t_Textured;
         public EffectTechnique TechniqueBumpMapped => t_BumpMapped;
+
+        /// <summary>
+        /// Emissive is a float from 0-1 that is written with every visible pixel recorded.
+        /// A pixel with emissive value 1 will be fully lit regardless of ambient or directional
+        /// light settings..
+        /// </summary>
+        public float Emissive
+        {
+            get => p_Emissive.GetValueSingle();
+            set => p_Emissive.SetValue(value);
+        }
 
         public int ApplyDesat
         {

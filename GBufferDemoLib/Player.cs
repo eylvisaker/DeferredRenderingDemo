@@ -25,15 +25,16 @@ namespace GBufferDemoLib
 
             if (moveInput.LengthSquared() > 1e-4 || lookInput.LengthSquared() > 1e-4)
             {
-                float moveSpeed = (float)gameTime.ElapsedGameTime.TotalSeconds * 10;
-                float lookSpeed = (float)gameTime.ElapsedGameTime.TotalSeconds * 1.5f;
+                float moveSpeed = (float)gameTime.ElapsedGameTime.TotalSeconds * 20;
+                float lookSpeed = (float)gameTime.ElapsedGameTime.TotalSeconds * 2.1f;
 
                 Vector3 right = Vector3.Cross(Facing, Up);
+                right.Z = 0;
                 right.Normalize();
 
                 Position += moveSpeed * (moveInput.X * right + moveInput.Y * Facing);
 
-                facing += lookSpeed * (lookInput.X * right + lookInput.Y * Up);
+                facing += lookSpeed * (lookInput.X * right + lookInput.Y * Vector3.UnitZ);
                 facing.Normalize();
 
                 up = Vector3.Cross(right, Facing);
@@ -44,6 +45,7 @@ namespace GBufferDemoLib
             {
                 up = Vector3.UnitZ;
                 facing.Z = 0;
+                facing.Normalize();
             }
             if (gamePadState.Buttons.LeftStick == ButtonState.Pressed)
             {

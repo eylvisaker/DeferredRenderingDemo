@@ -25,6 +25,8 @@ float PreserveColorAngle;
 texture DiffuseTexture;
 texture NormalMapTexture;
 
+float Emissive;
+
 ////////////////////////////////
 // Vertex Inputs
 ////////////////////////////////
@@ -238,8 +240,8 @@ PSOUT_GBuffer packGBuffer(float4 color, float3 normal, float2 depth)
     PSOUT_GBuffer result;
     float d = depth.x / depth.y;
     
-    result.Color = color;
-    result.Depth = float4(d, d, d, 1);
+    result.Color = float4(color.rgb, Emissive);
+    result.Depth = d;
     result.Normal = float4(0.5 * (normalize(normal).xyz + 1), 1);
 
     return result;

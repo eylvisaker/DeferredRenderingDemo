@@ -27,6 +27,7 @@ public RenderTarget2D Color => color;
         internal void Begin()
         {
             graphics.SetRenderTargets(color, depth, normal);
+            graphics.BlendState = BlendState.Opaque;
         }
 
         internal void Rebuild()

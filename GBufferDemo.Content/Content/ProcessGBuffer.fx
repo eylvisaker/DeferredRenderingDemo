@@ -95,6 +95,7 @@ struct Surface
     float LinearDepth;
     float Depth;
     float3 Color;
+    float Emissive;
     float3 Normal;
     float SpecInt;
     float SpecPow;
@@ -115,6 +116,7 @@ Surface UnpackGBuffer(float2 texCoords)
     float3 normal = tex2D(NormalSampler, texCoords).xyz;
     
     result.Color = color.xyz;
+    result.Emissive = color.a;
     result.Depth = depth;
     result.LinearDepth = ConvertDepthToLinear(depth);
     result.Normal = normal * 2 - 1;
@@ -158,6 +160,7 @@ struct Material
 {
     float3 normal;
     float4 diffuseColor;
+    float emissive;
     float specExp;
     float specIntensity;
 };
@@ -170,7 +173,8 @@ Material CreateMaterial(Surface surface)
     mat.diffuseColor = float4(surface.Color.xyz, 1);
     mat.specExp = g_SpecExpRange.x + g_SpecExpRange.y * surface.SpecPow;
     mat.specIntensity = surface.SpecInt;
-   
+    mat.emissive = surface.Emissive;
+    
     return mat;
 }
 
@@ -210,7 +214,14 @@ float3 CalcDirectional(float3 position, Material material)
     float3 NDotH = saturate(dot(halfWay, material.normal));
     finalColor += DirLightColor.rgb * pow(NDotH, material.specExp);
 
-    return finalColor * material.diffuseColor.rgb;
+    float emissive = material.emissive;
+    
+    // It looks like you can group terms like this here:
+    //   ((1 - emissive) * finalColor + emissive) * material.DiffuseColor.rgb
+    // but the first term in parens is a float4 and the second is float1.
+    // and that's sort of confusing. But it might work right.
+    return (1 - emissive) * finalColor * material.diffuseColor.rgb
+           +                  emissive * material.diffuseColor.rgb;
 }
 
 float3 CalcPointLight(float3 position, Material material)

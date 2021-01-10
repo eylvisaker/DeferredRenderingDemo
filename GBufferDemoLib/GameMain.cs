@@ -182,7 +182,7 @@ namespace GBufferDemoLib
                 {
                     Color = clr,
                     Range = 9 + (float)Math.Sin(rot.Z * 10 * pt.Z + pt.X) * 3,
-                    Position = pt + 2f * new Vector3((float)Math.Cos(phi), (float)Math.Sin(phi), (float) Math.Cos(30 * rot.X + pt.Z)),
+                    Position = pt + 2f * new Vector3((float)Math.Cos(phi), (float)Math.Sin(phi), (float)Math.Cos(30 * rot.X + pt.Z)),
                     Intensity = 4/* + (float)Math.Cos(rot.X * 500 + pt.Length())*/,
                 });
             }
@@ -199,7 +199,7 @@ namespace GBufferDemoLib
 
             gbuffer.Begin();
 
-            RenderGeometry(graphics);
+            DrawScene(graphics);
 
             gbuffer.Complete();
 
@@ -216,8 +216,10 @@ namespace GBufferDemoLib
             }
         }
 
-        private void RenderGeometry(GraphicsDevice graphics)
+        private void DrawScene(GraphicsDevice graphics)
         {
+            DrawSky();
+
             // gEffect.ApplyDesat = 0;
             gEffect.DiffuseTexture = surface;
             gEffect.NormalMapTexture = surfaceNormalMap;
@@ -277,6 +279,13 @@ namespace GBufferDemoLib
             }
         }
 
+        private void DrawSky()
+        {
+            skybox.Effect = gEffect;
+
+            skybox.Draw(player.Position);
+        }
+
         private IEnumerable<Vector3> LatticePoints(int distance = 10)
         {
             for (int k = 0; k <= distance; k++)
@@ -311,7 +320,7 @@ namespace GBufferDemoLib
                                  // Matrix.CreateRotationX(rot.X * pt.X + pt.X) *
                                  // Matrix.CreateRotationY(rot.Y * pt.Y + pt.Y) *
                                  // Matrix.CreateRotationZ(rot.Z * pt.Z + pt.Z) *
-                                 Matrix.CreateTranslation(pt.X + 4 * (float)Math.Sin(rot.X * 30 + pt.X), 
+                                 Matrix.CreateTranslation(pt.X + 4 * (float)Math.Sin(rot.X * 30 + pt.X),
                                                           pt.Y + 4 * (float)Math.Cos(rot.X * 30 + pt.Y), pt.Z) *
                                 //Matrix.CreateRotationX(rot.X) *
                                 //Matrix.CreateRotationY(rot.Y) *
