@@ -4,19 +4,19 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace GBufferDemoLib.Geometry
+namespace GBufferDemoLib.Geometry.Icosahedrons
 {
-    public class BumpMappedIcosahedronBuilder : IcosahedronBuilder
+    public class TexturedIcosahedronBuilder : IcosahedronBuilder
     {
-        private List<VertexPositionNormalTangentsTexture> vertices;
+        private List<VertexPositionNormalTexture> vertices;
 
         public override VertexBuffer CreateModel(GraphicsDevice graphics)
         {
-            vertices = new List<VertexPositionNormalTangentsTexture>();
+            vertices = new List<VertexPositionNormalTexture>();
 
             BuildGeometry();
 
-            var result = new VertexBuffer(graphics, VertexPositionNormalTangentsTexture.VertexDeclaration, 60, BufferUsage.None);
+            var result = new VertexBuffer(graphics, VertexPositionNormalTexture.VertexDeclaration, 60, BufferUsage.None);
 
             result.SetData(vertices.ToArray());
 
@@ -28,40 +28,30 @@ namespace GBufferDemoLib.Geometry
             Vector3 ba = b - a;
             Vector3 ca = c - a;
             Vector3 normal = Vector3.Cross(ca, ba);
-            Vector3 tangent0 = b - c;
-            Vector3 tangent1 = Vector3.Cross(normal, tangent0);
 
             normal.Normalize();
-            tangent0.Normalize();
-            tangent1.Normalize();
 
             // Inverse width of the texture.
             const float invW = 1 / 40.0f;
 
-            vertices.Add(new VertexPositionNormalTangentsTexture
+            vertices.Add(new VertexPositionNormalTexture
             {
                 Position = a,
                 Normal = normal,
-                Tangent0 = tangent0,
-                Tangent1 = tangent1,
                 TextureCoordinate = new Vector2((1 + 2 * triangleIndex) * invW, 0),
             });
 
-            vertices.Add(new VertexPositionNormalTangentsTexture
+            vertices.Add(new VertexPositionNormalTexture
             {
                 Position = b,
                 Normal = normal,
-                Tangent0 = tangent0,
-                Tangent1 = tangent1,
                 TextureCoordinate = new Vector2(2 * (triangleIndex + 1) * invW, 1),
             });
 
-            vertices.Add(new VertexPositionNormalTangentsTexture
+            vertices.Add(new VertexPositionNormalTexture
             {
                 Position = c,
                 Normal = normal,
-                Tangent0 = tangent0,
-                Tangent1 = tangent1,
                 TextureCoordinate = new Vector2(2 * triangleIndex * invW, 1),
             });
         }

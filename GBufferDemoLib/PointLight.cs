@@ -5,7 +5,7 @@ using System.Text;
 
 namespace GBufferDemoLib
 {
-    public class Light
+    public class PointLight
     {
         public Color Color { get; set; }
         public Vector3 Position { get; set; }

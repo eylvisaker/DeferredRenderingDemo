@@ -1,9 +1,11 @@
 ﻿using GBufferDemoLib.Geometry;
+using GBufferDemoLib.Geometry.Icosahedrons;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace GBufferDemoLib
 {
@@ -13,18 +15,19 @@ namespace GBufferDemoLib
         private GBuffer gbuffer;
         private GBufferProcessor gbufferProc;
         private BasicEffect basicEffect;
-        private VertexBuffer buffer;
+        private VertexBuffer icosahedron;
         private FillGBufferEffect gEffect;
         private ProcessGBufferEffect fEffect;
         private Texture2D surface;
         private Texture2D surfaceNormalMap;
         private Texture2D white;
         private Skybox skybox;
-        private List<Light> lights = new List<Light>();
+        private List<PointLight> lights = new List<PointLight>();
         private Player player = new Player();
 
         private bool rebuild = false;
-        private int technique;
+        private int technique = 1;
+        private float updateStep = 0.05f;
 
         public bool OpenGL { get; set; }
 
@@ -67,7 +70,7 @@ namespace GBufferDemoLib
 
         protected override void LoadContent()
         {
-            buffer = new TexturedIcosahedronBuilder().CreateModel(GraphicsDevice);
+            icosahedron = new BumpMappedIcosahedronBuilder().CreateModel(GraphicsDevice);
             surface = Content.Load<Texture2D>("surface");
             surfaceNormalMap = Content.Load<Texture2D>("surface-normalmap");
             white = Content.Load<Texture2D>("white");
@@ -83,6 +86,8 @@ namespace GBufferDemoLib
         private Matrix projection;
         private KeyboardState lastKeyboard;
         private int latticeSize = 5;
+        private bool paused;
+
         Vector3 DirectionToSun => new Vector3((float)Math.Cos(rot.X), (float)Math.Sin(rot.X), 1);
 
         protected override void Update(GameTime gameTime)
@@ -94,7 +99,14 @@ namespace GBufferDemoLib
 
             player.Update(gameTime, GamePad.GetState(PlayerIndex.One));
 
-            rot += 0.05f * new Vector3(1, 0.82f, 0.71f) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (!paused)
+            {
+                rot += updateStep * new Vector3(1, 0.82f, 0.71f) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
+            else
+            {
+                rot.Z += updateStep * 0.71f * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
 
             KeyboardState keyboard = Keyboard.GetState();
 
@@ -114,6 +126,18 @@ namespace GBufferDemoLib
             {
                 latticeSize++;
                 rebuild = true;
+            }
+            if (KeyReleased(ref keyboard, Keys.Pause))
+            {
+                paused = !paused;
+            }
+            if (KeyReleased(ref keyboard, Keys.PageUp))
+            {
+                updateStep *= 2;
+            }
+            if (KeyReleased(ref keyboard, Keys.PageDown))
+            {
+                updateStep /= 2;
             }
             if (KeyReleased(ref keyboard, Keys.OemMinus))
             {
@@ -140,8 +164,8 @@ namespace GBufferDemoLib
 
             if (rebuild)
             {
-                buffer.Dispose();
-                buffer = new BumpMappedIcosahedronBuilder().CreateModel(GraphicsDevice);
+                icosahedron.Dispose();
+                icosahedron = new BumpMappedIcosahedronBuilder().CreateModel(GraphicsDevice);
 
                 InitLights();
 
@@ -177,12 +201,19 @@ namespace GBufferDemoLib
             {
                 Color clr = new Color((int)(150 + pt.X * 17) % 256, (int)(250 + pt.Y * 11) % 256, (int)(80 + pt.Z * 31) % 256, 255);
                 float phi = 40 * rot.X + pt.X + 10 * (rot.Y + pt.Y);
+                float range = 9 + (float)Math.Sin(rot.Z * 100 + pt.Z + pt.X) * 3;
+                Vector3 position = pt + 2f * new Vector3((float)Math.Cos(phi), (float)Math.Sin(phi), (float)Math.Cos(30 * rot.X * Math.Sin(pt.Z) + MathHelper.PiOver2));
 
-                lights.Add(new Light
+                if (lights.Count == 0)
+                {
+                    Debug.WriteLine($"Position: {position} Range: {range}");
+                }
+
+                lights.Add(new PointLight
                 {
                     Color = clr,
-                    Range = 9 + (float)Math.Sin(rot.Z * 10 * pt.Z + pt.X) * 3,
-                    Position = pt + 2f * new Vector3((float)Math.Cos(phi), (float)Math.Sin(phi), (float)Math.Cos(30 * rot.X + pt.Z)),
+                    Range = range,
+                    Position = position,
                     Intensity = 4/* + (float)Math.Cos(rot.X * 500 + pt.Length())*/,
                 });
             }
@@ -196,6 +227,8 @@ namespace GBufferDemoLib
             gbufferProc.EyePosition = eyePosition;
 
             gEffect.ViewProjection = view * projection;
+            gEffect.SpecularIntensity = 0;
+            gEffect.SpecularExponent = 0;
 
             gbuffer.Begin();
 
@@ -210,9 +243,9 @@ namespace GBufferDemoLib
 
             gbufferProc.Begin(view, projection);
 
-            foreach (Light light in lights)
+            foreach (PointLight light in lights)
             {
-                gbufferProc.PointLight(light);
+                gbufferProc.DrawLight(light);
             }
         }
 
@@ -258,12 +291,12 @@ namespace GBufferDemoLib
                     pass.Apply();
 
                     graphics.Textures[0] = surface;
-                    graphics.SetVertexBuffer(buffer);
-                    graphics.DrawPrimitives(PrimitiveType.TriangleList, 0, buffer.VertexCount / 3);
+                    graphics.SetVertexBuffer(icosahedron);
+                    graphics.DrawPrimitives(PrimitiveType.TriangleList, 0, icosahedron.VertexCount / 3);
                 }
             }
 
-            foreach (Light light in lights)
+            foreach (PointLight light in lights)
             {
                 gEffect.World = Matrix.CreateScale(0.1f) *
                                 Matrix.CreateTranslation(light.Position); // *
@@ -276,8 +309,8 @@ namespace GBufferDemoLib
                     pass.Apply();
 
                     graphics.Textures[0] = white;
-                    graphics.SetVertexBuffer(buffer);
-                    graphics.DrawPrimitives(PrimitiveType.TriangleList, 0, buffer.VertexCount / 3);
+                    graphics.SetVertexBuffer(icosahedron);
+                    graphics.DrawPrimitives(PrimitiveType.TriangleList, 0, icosahedron.VertexCount / 3);
                 }
             }
         }
@@ -335,8 +368,8 @@ namespace GBufferDemoLib
                     pass.Apply();
 
                     graphics.Textures[0] = surface;
-                    graphics.SetVertexBuffer(buffer);
-                    graphics.DrawPrimitives(PrimitiveType.TriangleList, 0, buffer.VertexCount / 3);
+                    graphics.SetVertexBuffer(icosahedron);
+                    graphics.DrawPrimitives(PrimitiveType.TriangleList, 0, icosahedron.VertexCount / 3);
                 }
             }
         }

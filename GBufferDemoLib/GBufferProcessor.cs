@@ -1,4 +1,5 @@
 ﻿using GBufferDemoLib.Geometry;
+using GBufferDemoLib.Geometry.Icosahedrons;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -85,7 +86,7 @@ namespace GBufferDemoLib
             graphics.DepthStencilState = DepthStencilState.None;
         }
 
-        internal void PointLight(Light light)
+        internal void DrawLight(PointLight light)
         {
             effect.Parameters["PointLightPos"].SetValue(light.Position);
             effect.Parameters["PointLightRangeReciprocal"].SetValue(1 / light.Range);
@@ -94,11 +95,22 @@ namespace GBufferDemoLib
 
             InitializeFullScreen();
 
-            var screenPos = Vector4.Transform(new Vector4(light.Position, 1), viewProjection);
-            var screenRange = Vector4.Transform(new Vector4(new Vector3(light.Range), 0), viewProjection);
+            // Compensating for using an icosahedron here.
+            float range = light.Range * 1.5f;
 
             effect.CurrentTechnique = effect.Techniques["PointLight"];
-            effect.Parameters["WorldViewProjection"].SetValue(Matrix.CreateScale(light.Range * 1.2f) * Matrix.CreateTranslation(light.Position) * viewProjection);
+            effect.Parameters["WorldViewProjection"].SetValue(Matrix.CreateScale(range) * Matrix.CreateTranslation(light.Position) * viewProjection);
+
+            bool resetState = false;
+
+            RasterizerState prevState = graphics.RasterizerState;
+
+            // If we're inside the light we need to draw the inside of it instead of the outside.
+            if ((EyePosition - light.Position).Length() < range)
+            {
+                graphics.RasterizerState = RasterizerState.CullNone;
+                resetState = true;
+            }
 
             foreach (var pass in effect.CurrentTechnique.Passes)
             {
@@ -106,6 +118,11 @@ namespace GBufferDemoLib
 
                 graphics.SetVertexBuffer(icosahedron);
                 graphics.DrawPrimitives(PrimitiveType.TriangleList, 0, icosahedron.VertexCount / 3);
+            }
+
+            if (resetState)
+            {
+                graphics.RasterizerState = prevState;
             }
         }
     }

@@ -27,7 +27,7 @@ namespace GBufferDemoLib
 
         internal void Begin()
         {
-            graphics.SetRenderTargets(color, depth, normal);
+            graphics.SetRenderTargets(color, depth, normal, specular);
             graphics.BlendState = BlendState.Opaque;
         }
 
