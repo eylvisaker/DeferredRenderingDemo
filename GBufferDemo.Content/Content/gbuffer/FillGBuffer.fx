@@ -7,7 +7,7 @@
 #endif
 
 float4x4 WorldViewProjection;
-float4x4 World;
+float3x3 World;
 float3 SpriteNormal;
 
 ////////////////////////////////
@@ -24,24 +24,26 @@ float PreserveColorAngle;
 ////////////////////////////////
 texture DiffuseTexture;
 texture NormalMapTexture;
+texture SpecularMapTexture;
 
 float Emissive;
 float SpecularExponent;
 float SpecularIntensity;
+float4 Color;
 
 ////////////////////////////////
 // Vertex Inputs
 ////////////////////////////////
 struct VertexShaderInput_Textured
 {
-    float4 Position : POSITION;
+    float4 Position : POSITION0;
     float2 TexCoords : TEXCOORD0;
     float3 Normal : NORMAL;
 };
 
 struct VertexShaderInput_Bumped
 {
-    float4 Position : POSITION;
+    float4 Position : POSITION0;
     float2 TexCoords : TEXCOORD0;
     float3 Normal : NORMAL;
     float3 Tangent0 : TANGENT0;
@@ -50,13 +52,13 @@ struct VertexShaderInput_Bumped
 
 struct VertexShaderInput_Sprite
 {
-    float4 Position : POSITION;
+    float4 Position : POSITION0;
     float2 TexCoords : TEXCOORD0;
 };
 
 struct VertexShaderInput_ColoredSprite
 {
-    float4 Position : POSITION;
+    float4 Position : POSITION0;
     float2 TexCoords : TEXCOORD0;
     float4 Color : COLOR0;
 };
@@ -73,12 +75,19 @@ sampler normalSampler = sampler_state
 {
     Texture = <NormalMapTexture>;
 };
+sampler specularSampler = sampler_state
+{
+    Texture = <SpecularMapTexture>;
+};
 
+
+// The conversion to GLSL seems to have problems with NORMAL and TANGENT semantics, 
+// so here we use use texcoord for normal/tangent vectors instead.
 struct PSIN_Textured
 {
     float4 Position : SV_POSITION;
     float4 Color : COLOR0;
-    float3 Normal : NORMAL0;
+    float3 Normal : TEXCOORD2;      
     float2 TexCoords : TEXCOORD0;
     float2 Depth : TEXCOORD1;
 };
@@ -87,9 +96,9 @@ struct PSIN_Bumped
 {
     float4 Position : SV_POSITION;
     float4 Color : COLOR0;
-    float3 Normal : NORMAL0;
-    float3 Tangent0 : TANGENT0;
-    float3 Tangent1 : TANGENT1;
+    float3 Normal : TEXCOORD2;
+    float3 Tangent0 : TEXCOORD3;
+    float3 Tangent1 : TEXCOORD4;
     float2 TexCoords : TEXCOORD0;
     float2 Depth : TEXCOORD1;
 };
@@ -177,7 +186,7 @@ PSIN_Textured vs_Sprite(VertexShaderInput_Sprite input)
     output.Position = pos;
     output.TexCoords = input.TexCoords;
     output.Normal = SpriteNormal;
-    output.Color = float4(1, 1, 1, 1);
+    output.Color = Color;
     output.Depth.x = pos.z;
     output.Depth.y = pos.w;
 
@@ -193,7 +202,7 @@ PSIN_Textured vs_ColoredSprite(VertexShaderInput_ColoredSprite input)
     output.Position = pos;
     output.TexCoords = input.TexCoords;
     output.Normal = SpriteNormal;
-    output.Color = input.Color;
+    output.Color = Color * input.Color;
     output.Depth.x = pos.z;
     output.Depth.y = pos.w;
 
@@ -208,8 +217,8 @@ PSIN_Textured vs_Textured(VertexShaderInput_Textured input)
     
     output.Position = pos;
     output.TexCoords = input.TexCoords;
-    output.Normal = mul(input.Normal, (float3x3)World);
-    output.Color = float4(1, 1, 1, 1);
+    output.Normal = mul(input.Normal, World);
+    output.Color = Color;
     output.Depth.x = pos.z;
     output.Depth.y = pos.w;
 
@@ -224,10 +233,48 @@ PSIN_Bumped vs_Bumped(VertexShaderInput_Bumped input)
     
     output.Position = pos;
     output.TexCoords = input.TexCoords;
-    output.Normal = normalize(mul(input.Normal, (float3x3) World));
-    output.Tangent0 = normalize(mul(input.Tangent0, (float3x3) World));
-    output.Tangent1 = normalize(mul(input.Tangent1, (float3x3) World));
-    output.Color = float4(1, 1, 1, 1);
+    output.Normal = normalize(mul(input.Normal,     World));
+    output.Tangent0 = normalize(mul(input.Tangent0, World));
+    output.Tangent1 = normalize(mul(input.Tangent1, World));
+    output.Color = Color;
+    output.Depth.x = pos.z;
+    output.Depth.y = pos.w;
+
+    return output;
+}
+
+PSIN_Bumped vs_InstanceTextured(VertexShaderInput_Textured input, float4x4 instanceTransform : BLENDWEIGHT0)
+{
+    PSIN_Bumped output;
+    
+    float3x3 normInstance = transpose((float3x3) instanceTransform);
+    
+    float4 pos = mul(mul(input.Position, transpose(instanceTransform)), WorldViewProjection);
+    
+    output.Position = pos;
+    output.TexCoords = input.TexCoords;
+    output.Normal = normalize(mul(mul(input.Normal, normInstance), World));
+    output.Color = Color;
+    output.Depth.x = pos.z;
+    output.Depth.y = pos.w;
+
+    return output;
+}
+
+PSIN_Bumped vs_InstanceBumped(VertexShaderInput_Bumped input, float4x4 instanceTransform : BLENDWEIGHT0)
+{
+    PSIN_Bumped output;
+    
+    float3x3 normInstance = transpose((float3x3) instanceTransform);
+    
+    float4 pos = mul(mul(input.Position, transpose(instanceTransform)), WorldViewProjection);
+    
+    output.Position = pos;
+    output.TexCoords = input.TexCoords;
+    output.Normal   = normalize(mul(mul(input.Normal,   normInstance), World));
+    output.Tangent0 = normalize(mul(mul(input.Tangent0, normInstance), World));
+    output.Tangent1 = normalize(mul(mul(input.Tangent1, normInstance), World));
+    output.Color = Color;
     output.Depth.x = pos.z;
     output.Depth.y = pos.w;
 
@@ -239,19 +286,31 @@ PSIN_Bumped vs_Bumped(VertexShaderInput_Bumped input)
 //////////////////////////////////////////////////////////////////////
 
 // This must match the same named constants in ProcessGBuffer.fx
-static const float2 g_SpecExpRange = { 0.1, 250.0 };
+static const float2 g_SpecExpRange = { 0.1, 16384.1 };
 
-PSOUT_GBuffer packGBuffer(float4 color, float3 normal, float2 depth)
+float3 calcBumpNormal(float2 texCoords, float3 normal, float3 tangent0, float3 tangent1)
+{
+    float4 bump = tex2D(normalSampler, texCoords);
+    bump = (bump * 2) - 1;
+    
+    float3 bumpNormal = bump.x * tangent0 
+                      + bump.y * tangent1
+                      + bump.z * normal;
+    
+    return bumpNormal;
+}
+
+PSOUT_GBuffer packGBuffer(float4 color, float3 normal, float2 depth, float specIntensity)
 {
     PSOUT_GBuffer result;
     float d = depth.x / depth.y;
     
     float normedSpecExp = (SpecularExponent - g_SpecExpRange.x) / g_SpecExpRange.y;
     
-    result.Color = float4(color.rgb, Emissive);
-    result.Depth = d;
+    result.Color = float4(color.rgb, Emissive / 255);
+    result.Depth = 1 - d;
     result.Normal = float4(0.5 * (normalize(normal).xyz + 1), 1);
-    result.Spec = float4(normedSpecExp, SpecularIntensity, 0, 0);// what do to with last two?
+    result.Spec = float4(normedSpecExp, specIntensity * SpecularIntensity, 0, 0); // two free spaces here.. what do to with them?
     
     return result;
 }
@@ -270,7 +329,8 @@ PSOUT_GBuffer ps_Sprite(PSIN_Textured input)
 
     return packGBuffer(texel * input.Color,
                        input.Normal,
-                       input.Depth);
+                       input.Depth,
+                       0.5f);
 }
 
 PSOUT_GBuffer ps_Textured(PSIN_Textured input)
@@ -296,16 +356,34 @@ PSOUT_GBuffer ps_Bumped(PSIN_Bumped input)
     //    texel = desaturate(texel);
     //}
     
-    float4 bump = tex2D(normalSampler, input.TexCoords);
-    bump = (bump * 2) - 1;
-    
-    float3 bumpNormal = bump.x * input.Tangent0 
-                      + bump.y * input.Tangent1
-                      + bump.z * input.Normal;
+    float3 bumpNormal = calcBumpNormal(input.TexCoords, input.Normal, input.Tangent0, input.Tangent1);
     
     return packGBuffer(input.Color * texel,
                        bumpNormal,
-                       input.Depth);
+                       input.Depth,
+                       0.5f);
+}
+
+PSOUT_GBuffer ps_Speculared(PSIN_Bumped input)
+{
+    float4 texel = tex2D(diffuseSampler, input.TexCoords);
+
+    if (texel.a < 0.1)
+        discard;
+    
+    //if (ApplyDesat)
+    //{
+    //    texel = desaturate(texel);
+    //}
+    
+    float3 bumpNormal = calcBumpNormal(input.TexCoords, input.Normal, input.Tangent0, input.Tangent1);
+    
+    float4 spec = tex2D(specularSampler, input.TexCoords);
+    
+    return packGBuffer(input.Color * texel,
+                       bumpNormal,
+                       input.Depth,
+                       spec.g);
 }
 
 //// // Turns to gray scale
@@ -361,7 +439,7 @@ PSOUT_GBuffer ps_Bumped(PSIN_Bumped input)
 
 technique Sprite
 {
-    pass Pass1
+    pass Pass0
     {
         VertexShader = compile VSMODEL vs_Sprite();
         PixelShader = compile PSMODEL ps_Sprite();
@@ -383,5 +461,41 @@ technique Bumped
     {
         VertexShader = compile VSMODEL vs_Bumped();
         PixelShader = compile PSMODEL ps_Bumped();
+    }
+}
+
+technique BumpSpeculared
+{
+    pass Pass0
+    {
+        VertexShader = compile VSMODEL vs_Bumped();
+        PixelShader = compile PSMODEL ps_Speculared();
+    }
+}
+
+technique InstanceTextured
+{
+    pass Pass0
+    {
+        VertexShader = compile VSMODEL vs_InstanceBumped();
+        PixelShader = compile PSMODEL ps_Textured();
+    }
+}
+
+technique InstanceBumped
+{
+    pass Pass0
+    {
+        VertexShader = compile VSMODEL vs_InstanceBumped();
+        PixelShader = compile PSMODEL ps_Bumped();
+    }
+}
+
+technique InstanceBumpSpeculared
+{
+    pass Pass0
+    {
+        VertexShader = compile VSMODEL vs_InstanceBumped();
+        PixelShader = compile PSMODEL ps_Speculared();
     }
 }

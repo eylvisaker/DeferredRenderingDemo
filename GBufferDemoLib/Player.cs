@@ -22,17 +22,34 @@ namespace GBufferDemoLib
             Vector2 lookInput = gamePadState.ThumbSticks.Right;
             Vector3 facing = Facing;
             Vector3 up = Up;
+            Vector3 right = Vector3.Cross(Facing, Up);
 
-            if (moveInput.LengthSquared() > 1e-4 || lookInput.LengthSquared() > 1e-4)
+            Vector3 moveFacing = Facing;
+            Vector3 moveRight = right;
+
+            moveFacing.Z = 0;
+            moveRight.Z = 0;
+
+            float moveSpeed = (float)gameTime.ElapsedGameTime.TotalSeconds * 40;
+
+            if (moveFacing.LengthSquared() > 1e-4)
             {
-                float moveSpeed = (float)gameTime.ElapsedGameTime.TotalSeconds * 20;
-                float lookSpeed = (float)gameTime.ElapsedGameTime.TotalSeconds * 2.1f;
+                moveFacing.Normalize();
+                moveRight.Normalize();
 
-                Vector3 right = Vector3.Cross(Facing, Up);
+                Position += moveSpeed * (moveInput.X * moveRight + moveInput.Y * moveFacing);
+            }
+
+            Position = new Vector3(Position.X,
+                                   Position.Y,
+                                   Position.Z + 0.5f * moveSpeed * (gamePadState.Triggers.Right - gamePadState.Triggers.Left));
+
+            if (lookInput.LengthSquared() > 1e-4)
+            {
+                float lookSpeed = (float)gameTime.ElapsedGameTime.TotalSeconds * 4.2f;
+
                 right.Z = 0;
                 right.Normalize();
-
-                Position += moveSpeed * (moveInput.X * right + moveInput.Y * Facing);
 
                 facing += lookSpeed * (lookInput.X * right + lookInput.Y * Vector3.UnitZ);
                 facing.Normalize();
@@ -44,8 +61,7 @@ namespace GBufferDemoLib
             if (gamePadState.Buttons.RightStick == ButtonState.Pressed)
             {
                 up = Vector3.UnitZ;
-                facing.Z = 0;
-                facing.Normalize();
+                facing = Vector3.UnitX + Vector3.UnitY;
             }
             if (gamePadState.Buttons.LeftStick == ButtonState.Pressed)
             {

@@ -11,7 +11,15 @@
   <ItemGroup>
     <MonoGameContentReference Include="$(MSBuildThisFileDirectory)Content\Content.mgcb" />
     <None Include="$(MSBuildThisFileDirectory)Content\Content.mgcb" />
-    <None Include="$(MSBuildThisFileDirectory)Content\ProcessGBuffer.fx" />
-    <None Include="$(MSBuildThisFileDirectory)Content\FillGBuffer.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\Background.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\Clear.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\Downscale.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\FillGBuffer.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\fullscreen.hlsl" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\GaussianBlur.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\PostProcess.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\LightGBuffer.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\Stats.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\unpackGBuffer.hlsl" />
   </ItemGroup>
 </Project>

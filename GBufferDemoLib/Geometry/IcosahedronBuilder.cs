@@ -4,16 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace GBufferDemoLib.Geometry.Icosahedrons
+namespace GBufferDemoLib.Geometry
 {
-    public abstract class IcosahedronBuilder
+    public class IcosahedronBuilder
     {
-        public abstract VertexBuffer CreateModel(GraphicsDevice graphics);
-
-        protected void BuildGeometry()
+        public void BuildGeometry(IGeometryBuilder geometryBuilder)
         {
-            List<int> indices = new List<int>();
-
             // An icosahedron can be created from the vertices of three intersecting golden rectangles.
             // https://en.wikipedia.org/wiki/Golden_rectangle
             List<Vector3> v = new List<Vector3>();
@@ -77,13 +73,11 @@ namespace GBufferDemoLib.Geometry.Icosahedrons
             {
                 int startIndex = 4 * i;
 
-                AddTriangle(vertexIndices[startIndex] - 1,
-                            v[vertexIndices[startIndex + 1]],
-                            v[vertexIndices[startIndex + 2]],
-                            v[vertexIndices[startIndex + 3]]);
+                geometryBuilder.AddTriangle(vertexIndices[startIndex] - 1,
+                                            v[vertexIndices[startIndex + 1]],
+                                            v[vertexIndices[startIndex + 2]],
+                                            v[vertexIndices[startIndex + 3]]);
             }
         }
-
-        protected abstract void AddTriangle(int triangleIndex, Vector3 a, Vector3 b, Vector3 c);
     }
 }
