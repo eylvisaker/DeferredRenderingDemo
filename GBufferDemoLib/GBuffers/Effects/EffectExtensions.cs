@@ -21,5 +21,14 @@ namespace GBufferDemoLib.GBuffers.Effects
                 }
             }
         }
+
+        /// <summary>
+        /// Prepares a model to be rendered using the associated effect
+        /// </summary>
+        /// <param name="model"></param>
+        public static void PrepModel(this IDrawEffect effect, Model model)
+        {
+            PrepModel(effect.AsEffect(), model);
+        }
     }
 }

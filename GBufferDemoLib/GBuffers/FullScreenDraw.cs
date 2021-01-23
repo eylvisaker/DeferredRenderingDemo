@@ -30,7 +30,7 @@ namespace GBufferDemoLib.GBuffers
         public void Draw(Effect effect)
         {
             graphics.RasterizerState = RasterizerState.CullCounterClockwise;
-
+            
             foreach (EffectPass pass in effect.CurrentTechnique.Passes)
             {
                 pass.Apply();

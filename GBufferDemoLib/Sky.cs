@@ -1,4 +1,5 @@
 ﻿using GBufferDemoLib.GBuffers.Effects;
+using GBufferDemoLib.Lights;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
@@ -34,6 +35,7 @@ namespace GBufferDemoLib
             nightSky = content.Load<Texture2D>("sky/nightsky");
 
             Sun.Texture = content.Load<Texture2D>("white");
+
         }
 
         public BackgroundEffect Effect
@@ -156,7 +158,7 @@ namespace GBufferDemoLib
 
             float scale = 0.01f * farPlane * body.Scale * (1 + 0.5f * body.Red);
             Vector4 color = body.Color.ToVector4();
-            
+
             color *= body.BodyIntensity;
             color.W = 1;
 
@@ -175,15 +177,14 @@ namespace GBufferDemoLib
 
     public class CelestialBody
     {
-        private Vector3 directionTo;
+        public LightDirectional Light { get; set; } = new LightDirectional();
 
         public Vector3 DirectionTo
         {
-            get => directionTo;
+            get => Light.DirectionToLight;
             set
             {
-                directionTo = value;
-                directionTo.Normalize();
+                Light.DirectionToLight = Vector3.Normalize(value);
 
                 CalcBlue();
                 CalcRed();
@@ -205,13 +206,20 @@ namespace GBufferDemoLib
 
                     BodyIntensity = MaxBodyIntensity * (0.1f + 0.9f * (Math.Min(Blue, 1)));
                 }
+
+                Light.Intensity = LightIntensity;
             }
         }
 
         /// <summary>
         /// The intensity of the directional light provided by this celestial body.
         /// </summary>
-        public float LightIntensity { get; private set; } = 800f;
+        public float LightIntensity
+        {
+            get => Light.Intensity;
+            private set => Light.Intensity = value;
+        }
+
         public float MaxLightIntensity { get; set; } = 800f;
 
         /// <summary>
@@ -242,7 +250,7 @@ namespace GBufferDemoLib
         /// The color of the celestial body in the sky
         /// </summary>
         public Color Color { get; set; } = new Color(255, 255, 128);
-
+        
         public float BodyIntensity { get; private set; }
         public float MaxBodyIntensity { get; set; } = 400f;
 
@@ -255,7 +263,7 @@ namespace GBufferDemoLib
             float blueStart = -0.16f;
             float blueRange = 0.3f;
 
-            float blueF = (directionTo.Z - blueStart) / blueRange;
+            float blueF = (DirectionTo.Z - blueStart) / blueRange;
 
             blueF = Math.Min(blueF, 1);
             blueF = Math.Max(blueF, 0);
@@ -271,7 +279,7 @@ namespace GBufferDemoLib
             float redStart = -0.19f;
             float redRange = 0.29f;
 
-            float redF = (directionTo.Z - redStart) / redRange;
+            float redF = (DirectionTo.Z - redStart) / redRange;
 
             redF = Math.Min(redF, 1.1f);
             redF = Math.Max(redF, 0);
@@ -284,7 +292,7 @@ namespace GBufferDemoLib
             redF = Math.Min(redF, 1f);
 
             Red = red;
-            RedIntensity = redF * MaxSkyIntensity* (float)Math.Sqrt(red);
+            RedIntensity = redF * MaxSkyIntensity * (float)Math.Sqrt(red);
         }
     }
 }

@@ -19,11 +19,23 @@
 /processorParam:DebugMode=Debug
 /build:gbuffer/Background.fx
 
+#begin gbuffer/CascadeShadowMap.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Debug
+/build:gbuffer/CascadeShadowMap.fx
+
 #begin gbuffer/Clear.fx
 /importer:EffectImporter
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:gbuffer/Clear.fx
+
+#begin gbuffer/DirectionalLightShadow.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:gbuffer/DirectionalLightShadow.fx
 
 #begin gbuffer/Downscale.fx
 /importer:EffectImporter

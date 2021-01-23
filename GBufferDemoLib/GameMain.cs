@@ -1,5 +1,8 @@
-﻿using GBufferDemoLib.GBuffers;
+﻿using GBufferDemoLib.Cameras;
+using GBufferDemoLib.GBuffers;
+using GBufferDemoLib.GBuffers.Effects;
 using GBufferDemoLib.Geometry;
+using GBufferDemoLib.Lights;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
@@ -65,6 +68,10 @@ namespace GBufferDemoLib
             InitLights();
 
             icosahedronInstances = new InstanceDisplay(GraphicsDevice);
+
+            farPlane = 9000;
+
+            camera = new PerspectiveCamera(MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, farPlane);
         }
 
         protected override void LoadContent()
@@ -79,9 +86,6 @@ namespace GBufferDemoLib
             sphere = Content.Load<Model>("highdefsphere");
             ship = Content.Load<Model>("ship_light");
 
-            gbuffer.PrepModel(sphere);
-            gbuffer.PrepModel(ship);
-
             sky.Effect = gbuffer.BackgroundEffect;
         }
 
@@ -94,11 +98,9 @@ namespace GBufferDemoLib
             icosahedron = geometry.CreateSimpleGeometry(GraphicsDevice);
         }
 
-        Vector3 rot;
-        private Vector3 eyePosition;
+        private Vector3 rot;
         private int farPlane;
-        private Matrix view;
-        private Matrix projection;
+        private PerspectiveCamera camera;
         private KeyboardState lastKeyboard;
         private int latticeSize = 5;
         private bool paused;
@@ -137,6 +139,10 @@ namespace GBufferDemoLib
             {
                 technique = 1;
             }
+            if (KeyReleased(ref keyboard, Keys.D3))
+            {
+                technique = 2;
+            }
             if (KeyReleased(ref keyboard, Keys.OemPlus))
             {
                 latticeSize++;
@@ -167,6 +173,14 @@ namespace GBufferDemoLib
             {
                 drawInstanced = true;
             }
+            if (KeyReleased(ref keyboard, Keys.A))
+            {
+                sky.Sun.Light.EnableShadows = false;
+            }
+            if (KeyReleased(ref keyboard, Keys.S))
+            {
+                sky.Sun.Light.EnableShadows = true;
+            }
 
             lastKeyboard = keyboard;
         }
@@ -195,17 +209,9 @@ namespace GBufferDemoLib
                 rebuild = false;
             }
 
-            eyePosition = player.Position;
-
-            farPlane = 9000;
-
-            view = Matrix.CreateLookAt(eyePosition,
-                                       player.Position + player.Facing,
-                                       player.Up);
-            projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, farPlane);
+            camera.SetLookAt(player.Position, player.Position + player.Facing, player.Up);
 
             InitLights();
-
 
             // Useful for debugging.
             //BasicEffectDraw(graphics);
@@ -252,32 +258,26 @@ namespace GBufferDemoLib
 
         private void GBufferDraw(GraphicsDevice graphics, GameTime time)
         {
-            gbuffer.Gamma = 2.2f;
-            gbuffer.View = view;
-            gbuffer.Projection = projection;
-            gbuffer.EyePosition = eyePosition;
+            UpdateSky();
 
-            gbuffer.FillEffect.SpecularIntensity = 0;
-            gbuffer.FillEffect.SpecularExponent = 0;
+            gbuffer.Camera = camera;
+            gbuffer.Gamma = 2.2f;
 
             gbuffer.Begin(time);
             gbuffer.Clear();
 
-            gbuffer.BeginGeometry();
+            gbuffer.DrawGeometry(DrawScene);
+            gbuffer.ShadowMap(sky.Sun.Light, DrawScene);
 
-            DrawScene(graphics);
+            LightingStep lighting = gbuffer.BeginLighting();
 
-            UpdateSky();
-
-            gbuffer.BeginLighting();
-
-            gbuffer.Light.AmbientAndEmissive(sky.Sun.AmbientDown, sky.Sun.AmbientUp);
-            gbuffer.Light.DirectionalLight(sky.Sun.DirectionTo, Color.White.ToVector3() * sky.Sun.LightIntensity);
-            gbuffer.Light.ApplyLights(lights);
+            lighting.AmbientAndEmissive(sky.Sun.AmbientDown, sky.Sun.AmbientUp);
+            lighting.DirectionalLight(sky.Sun.Light);
+            lighting.ApplyLights(lights);
 
             DrawSky(graphics);
 
-            gbuffer.End(doBloom: true);
+            gbuffer.End(doBloom: false);
         }
 
         private void UpdateSky()
@@ -286,54 +286,68 @@ namespace GBufferDemoLib
 
             sky.NightSkyRotation = angle * 0.1f;
             sky.Sun.DirectionTo = new Vector3(
-                (float)Math.Cos(angle), 
+                (float)Math.Cos(angle),
                 1,
                 (float)Math.Sin(angle));
         }
 
-        private void DrawScene(GraphicsDevice graphics)
+        private void DrawScene(DrawStep drawStep)
         {
-            DrawLattice(graphics);
-            DrawLights();
-            DrawShip();
+            drawStep.Effect.SpecularIntensity = 0;
+            drawStep.Effect.SpecularExponent = 0;
+
+            DrawLattice(drawStep);
+
+            if (!drawStep.ShadowCastersOnly)
+            {
+                DrawLights(drawStep);
+            }
+
+            DrawShip(drawStep);
         }
 
-        private void DrawShip()
+        private void DrawShip(DrawStep drawStep)
         {
-            gbuffer.FillEffect.CurrentTechnique = gbuffer.FillEffect.TechniqueTextured;
-            gbuffer.FillEffect.Color = Color.White;
-            gbuffer.FillEffect.DiffuseTexture = surface;
-            gbuffer.FillEffect.Emissive = 0;
+            drawStep.Effect.SetTextures(surface);
+            drawStep.Effect.Emissive = 0;
+            drawStep.Effect.Color = Color.White;
+            drawStep.Effect.Instancing = false;
 
             float phi = (-0.1f * rot.X) % MathHelper.TwoPi;
             float heading = phi + MathHelper.Pi;
 
-            Vector3 position = 2000 * new Vector3((float)Math.Cos(phi), (float)Math.Sin(phi), 0) - 10 * Vector3.UnitZ;
+            Vector3 position = 100 * new Vector3((float)Math.Cos(phi), (float)Math.Sin(phi), 0) + 10 * Vector3.UnitZ;
 
-            ship.Draw(Matrix.CreateRotationX(MathHelper.PiOver2) 
-                * Matrix.CreateRotationZ(heading)
-                * Matrix.CreateTranslation(position), view, projection);
+            drawStep.Effect.PrepModel(ship);
+
+            Matrix world = Matrix.CreateRotationX(MathHelper.PiOver2) * Matrix.CreateRotationZ(heading) * Matrix.CreateTranslation(position);
+
+            ship.Draw(world,
+                      drawStep.Camera.View,
+                      drawStep.Camera.Projection);
         }
 
-        private void DrawLights()
+        private void DrawLights(DrawStep drawStep)
         {
-            gbuffer.FillEffect.CurrentTechnique = gbuffer.FillEffect.TechniqueTextured;
-            gbuffer.FillEffect.DiffuseTexture = white;
+            drawStep.Effect.SetTextures(white);
+            drawStep.Effect.Instancing = false;
+            drawStep.Effect.PrepModel(sphere);
 
             for (int i = 0; i < lights.Count; i++)
             {
                 PointLight light = lights[i];
-                gbuffer.FillEffect.Color = light.Color;
-                gbuffer.FillEffect.World = Matrix.CreateScale(0.1f) *
+
+                drawStep.Effect.Color = light.Color;
+                drawStep.Effect.World = Matrix.CreateScale(0.1f) *
                                 Matrix.CreateTranslation(light.Position);
 
-                gbuffer.FillEffect.Emissive = light.Intensity;
+                drawStep.Effect.Emissive = light.Intensity;
 
                 if (i == 0)
                 {
-                    gbuffer.FillEffect.World = Matrix.CreateTranslation(light.Position);
-
+                    drawStep.Effect.World = Matrix.CreateTranslation(light.Position);
                 }
+
                 foreach (var mesh in sphere.Meshes)
                 {
                     mesh.Draw();
@@ -341,23 +355,31 @@ namespace GBufferDemoLib
             }
         }
 
-        private void DrawLattice(GraphicsDevice graphics)
+        private void DrawLattice(DrawStep drawStep)
         {
-            // gbuffer.GEffect.ApplyDesat = 0;
-            gbuffer.FillEffect.DiffuseTexture = surface;
-            gbuffer.FillEffect.NormalMapTexture = surfaceNormalMap;
-            gbuffer.FillEffect.SpecularMapTexture = surfaceSpecularMap;
+            var graphics = drawStep.GraphicsDevice;
 
-            gbuffer.FillEffect.Color = Color.White;
+            drawStep.Effect.Color = Color.White;
+            drawStep.Effect.SpecularExponent = 100;
+            drawStep.Effect.SpecularIntensity = 0.9f;
 
-            gbuffer.FillEffect.CurrentTechnique = GetLatticeTechnique();
+            switch (technique)
+            {
+                case 2:
+                    drawStep.Effect.SetTextures(surface, surfaceNormalMap, surfaceSpecularMap);
+                    break;
+                case 1:
+                    drawStep.Effect.SetTextures(surface, surfaceNormalMap);
+                    break;
+                case 0:
+                default:
+                    drawStep.Effect.SetTextures(surface);
+                    break;
+            }
 
             graphics.SamplerStates[0] = SamplerState.AnisotropicClamp;
             graphics.SamplerStates[1] = SamplerState.AnisotropicClamp;
             graphics.SamplerStates[2] = SamplerState.AnisotropicClamp;
-
-            gbuffer.FillEffect.SpecularExponent = 100;
-            gbuffer.FillEffect.SpecularIntensity = 0.9f;
 
             icosahedronInstances.Instances.Clear();
 
@@ -385,9 +407,10 @@ namespace GBufferDemoLib
 
                 if (!drawInstanced)
                 {
-                    gbuffer.FillEffect.World = world;
+                    drawStep.Effect.World = world;
+                    drawStep.Effect.Instancing = false;
 
-                    foreach (var pass in gbuffer.FillEffect.CurrentTechnique.Passes)
+                    foreach (var pass in drawStep.Effect.CurrentTechnique.Passes)
                     {
                         pass.Apply();
 
@@ -400,23 +423,10 @@ namespace GBufferDemoLib
 
             if (drawInstanced)
             {
-                gbuffer.FillEffect.World = Matrix.Identity;
+                drawStep.Effect.World = Matrix.Identity;
+                drawStep.Effect.Instancing = true;
 
-                icosahedronInstances.Draw(gbuffer.FillEffect, icosahedron);
-            }
-        }
-
-        private EffectTechnique GetLatticeTechnique()
-        {
-            switch (technique)
-            {
-                case 2:
-                    return drawInstanced ? gbuffer.FillEffect.TechniqueInstanceBumpSpecularMapped : gbuffer.FillEffect.TechniqueBumpSpecularMapped;
-                case 1:
-                    return drawInstanced ? gbuffer.FillEffect.TechniqueInstanceBumpMapped : gbuffer.FillEffect.TechniqueBumpMapped;
-                case 0:
-                default:
-                    return drawInstanced ? gbuffer.FillEffect.TechniqueInstanceTextured : gbuffer.FillEffect.TechniqueTextured;
+                icosahedronInstances.Draw(drawStep.Effect.AsEffect(), icosahedron);
             }
         }
 
@@ -450,8 +460,8 @@ namespace GBufferDemoLib
 
             graphics.Clear(Color.Blue);
 
-            basicEffect.View = view;
-            basicEffect.Projection = projection;
+            basicEffect.View = camera.View;
+            basicEffect.Projection = camera.Projection;
             basicEffect.TextureEnabled = true;
             basicEffect.LightingEnabled = false;
 

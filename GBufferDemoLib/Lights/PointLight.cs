@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace GBufferDemoLib
+namespace GBufferDemoLib.Lights
 {
     public class PointLight
     {

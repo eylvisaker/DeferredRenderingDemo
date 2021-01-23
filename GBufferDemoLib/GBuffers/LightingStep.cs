@@ -1,5 +1,8 @@
-﻿using GBufferDemoLib.GBuffers.Effects;
+﻿using GBufferDemoLib.Cameras;
+using GBufferDemoLib.GBuffers.Effects;
 using GBufferDemoLib.Geometry;
+using GBufferDemoLib.Lights;
+using GBufferDemoLib.Shadows;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
@@ -14,11 +17,11 @@ namespace GBufferDemoLib.GBuffers
         private readonly GraphicsDevice graphics;
         private readonly GBufferTargets targets;
         private readonly FullScreenDraw fullScreen;
-        private Matrix viewProjection;
+        private Camera camera;
         private Model sphere;
         private LightGBufferEffect effect;
 
-        public LightGBufferEffect Effect
+        public LightGBufferEffect LightEffect
         {
             get => effect; 
             set
@@ -32,15 +35,13 @@ namespace GBufferDemoLib.GBuffers
             }
         }
 
+        private DirectionalLightShadowEffect directionalLightEffect;
+
         public Vector3 DirectionToLight { get; set; }
         public Color DirLightColor { get; set; }
 
         public Color AmbientDown { get; set; } = new Color(20, 20, 20);
         public Color AmbientRange { get; set; } = new Color(60, 60, 60);
-
-        public Vector3 EyePosition { get; set; }
-        public Matrix View { get; set; }
-        public Matrix Projection { get; set; }
 
         public Model Sphere
         {
@@ -48,7 +49,7 @@ namespace GBufferDemoLib.GBuffers
             set
             {
                 sphere = value;
-                sphere.Meshes[0].MeshParts[0].Effect = Effect;
+                sphere.Meshes[0].MeshParts[0].Effect = LightEffect;
             }
         }
 
@@ -64,27 +65,28 @@ namespace GBufferDemoLib.GBuffers
             this.fullScreen = fullScreen;
 
             Sphere = content.Load<Model>("sphere");
-            Effect = new LightGBufferEffect(content.Load<Effect>("LightGBuffer"));
+            LightEffect = new LightGBufferEffect(content.Load<Effect>("LightGBuffer"));
+            directionalLightEffect = new DirectionalLightShadowEffect(content.Load<Effect>("DirectionalLightShadow"));
         }
 
         public void Dispose()
         {
         }
 
-        public void Begin()
+        public void Begin(Camera camera)
         {
-            viewProjection = View * Projection;
-            
-            Matrix viewProjectionInv = Matrix.Invert(viewProjection);
+            this.camera = camera;
 
-            Effect.Parameters["EyePosition"].SetValue(EyePosition);
-            Effect.Parameters["ViewProjectionInv"].SetValue(viewProjectionInv);
-            Effect.Gamma = Gamma;
+            Matrix viewProjectionInv = Matrix.Invert(camera.ViewProjection);
 
-            Effect.ColorTexture = targets.Color;
-            Effect.DepthTexture = targets.Depth;
-            Effect.NormalTexture = targets.Normal;
-            Effect.SpecularTexture = targets.Specular;
+            LightEffect.Parameters["EyePosition"].SetValue(camera.Position);
+            LightEffect.Parameters["ViewProjectionInv"].SetValue(viewProjectionInv);
+            LightEffect.Gamma = Gamma;
+
+            LightEffect.ColorTexture = targets.Color;
+            LightEffect.DepthTexture = targets.Depth;
+            LightEffect.NormalTexture = targets.Normal;
+            LightEffect.SpecularTexture = targets.Specular;
 
             graphics.BlendState = BlendState.Additive;
             graphics.DepthStencilState = DepthStencilState.None;
@@ -97,29 +99,62 @@ namespace GBufferDemoLib.GBuffers
 
         public void AmbientAndEmissive(Vector3 ambientDownColor, Vector3 ambientUpColor)
         {
-            Effect.Parameters["AmbientDown"].SetValue(ambientDownColor);
-            Effect.Parameters["AmbientUpRange"].SetValue(ambientUpColor - ambientDownColor);
+            LightEffect.Parameters["AmbientDown"].SetValue(ambientDownColor);
+            LightEffect.Parameters["AmbientUpRange"].SetValue(ambientUpColor - ambientDownColor);
 
-            Effect.CurrentTechnique = Effect.Techniques["AmbientAndEmissiveLighting"];
+            LightEffect.CurrentTechnique = LightEffect.Techniques["AmbientAndEmissiveLighting"];
 
-            fullScreen.Draw(Effect);
+            fullScreen.Draw(LightEffect);
         }
 
-        public void DirectionalLight(Vector3 directionToLight, Color color)
+        public void DirectionalLight(LightDirectional light)
         {
-            DirectionalLight(directionToLight, color.ToVector3());
-        }
+            Effect effect;
 
-        public void DirectionalLight(Vector3 directionToLight, Vector3 color)
-        {
-            directionToLight.Normalize();
+            try
+            {
+                if (light.EnableShadows && light.ShadowMapper != null)
+                {
+                    graphics.SamplerStates[0] = CascadedShadowMapper.ShadowMapSamplerState;
+                    graphics.SamplerStates[1] = CascadedShadowMapper.ShadowMapSamplerState;
+                    graphics.SamplerStates[2] = CascadedShadowMapper.ShadowMapSamplerState;
+                    graphics.SamplerStates[3] = CascadedShadowMapper.ShadowMapSamplerState;
 
-            Effect.Parameters["DirToLight"].SetValue(directionToLight);
-            Effect.Parameters["DirLightColor"].SetValue(color);
+                    directionalLightEffect.VisualizeCascades = light.ShadowMapper.Settings.VisualizeCascades;
+                    directionalLightEffect.FilterAcrossCascades = light.ShadowMapper.Settings.FilterAcrossCascades;
+                    directionalLightEffect.FilterSize = light.ShadowMapper.Settings.FixedFilterSize;
+                    directionalLightEffect.Bias = light.ShadowMapper.Settings.Bias;
+                    directionalLightEffect.OffsetScale = light.ShadowMapper.Settings.OffsetScale;
 
-            Effect.CurrentTechnique = Effect.Techniques["DirectionalLighting"];
+                    directionalLightEffect.ViewProjection = camera.ViewProjection;
+                    directionalLightEffect.CameraPosWS = camera.Position;
 
-            fullScreen.Draw(Effect);
+
+                    directionalLightEffect.Apply(light);
+
+                    effect = directionalLightEffect;
+                }
+                else
+                {
+                    LightEffect.Parameters["DirToLight"].SetValue(light.DirectionToLight);
+                    LightEffect.Parameters["DirLightColor"].SetValue(light.ColorIntensity);
+
+                    LightEffect.CurrentTechnique = LightEffect.Techniques["DirectionalLighting"];
+
+                    effect = LightEffect;
+                }
+
+                return;
+
+                fullScreen.Draw(effect);
+            }
+            finally
+            {
+                graphics.SamplerStates[0] = SamplerState.LinearClamp;
+                graphics.SamplerStates[1] = SamplerState.LinearClamp;
+                graphics.SamplerStates[2] = SamplerState.LinearClamp;
+                graphics.SamplerStates[3] = SamplerState.LinearClamp;
+            }
         }
 
         public void ApplyLights(IReadOnlyList<PointLight> lights)
@@ -142,14 +177,14 @@ namespace GBufferDemoLib.GBuffers
             // Compensate for sphere tesselation here.
             float range = light.Range * 1.01f;
 
-            Effect.CurrentTechnique = Effect.Techniques["PointLight"];
+            LightEffect.CurrentTechnique = LightEffect.Techniques["PointLight"];
 
-            Effect.Parameters["PointLightPos"].SetValue(light.Position);
-            Effect.Parameters["PointLightRangeReciprocal"].SetValue(1 / light.Range);
-            Effect.Parameters["PointLightColor"].SetValue(light.Color.ToVector3());
-            Effect.Parameters["PointLightIntensity"].SetValue(light.Intensity);
+            LightEffect.Parameters["PointLightPos"].SetValue(light.Position);
+            LightEffect.Parameters["PointLightRangeReciprocal"].SetValue(1 / light.Range);
+            LightEffect.Parameters["PointLightColor"].SetValue(light.Color.ToVector3());
+            LightEffect.Parameters["PointLightIntensity"].SetValue(light.Intensity);
 
-            Effect.WorldViewProjection = Matrix.CreateScale(range) * Matrix.CreateTranslation(light.Position) * viewProjection;
+            LightEffect.WorldViewProjection = Matrix.CreateScale(range) * Matrix.CreateTranslation(light.Position) * camera.ViewProjection;
 
             sphere.Meshes[0].Draw();
         }

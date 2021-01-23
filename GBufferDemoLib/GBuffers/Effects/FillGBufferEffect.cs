@@ -4,7 +4,7 @@ using System;
 
 namespace GBufferDemoLib.GBuffers.Effects
 {
-    public class FillGBufferEffect : Effect, IEffectMatrices
+    public class FillGBufferEffect : Effect, IEffectMatrices, IDrawEffect
     {
         private Matrix world, projection, view;
         private EffectParameter p_WorldViewProjection;
@@ -29,6 +29,10 @@ namespace GBufferDemoLib.GBuffers.Effects
         private EffectTechnique t_InstanceTextured;
         private EffectTechnique t_InstanceBumpMapped;
         private EffectTechnique t_InstanceBumpSpecularMapped;
+        private bool instancing;
+        private Texture2D diffuseTexture;
+        private Texture2D normalMapTexture;
+        private Texture2D specularMapTexture;
 
         public FillGBufferEffect(Effect effect) : base(effect)
         {
@@ -141,20 +145,93 @@ namespace GBufferDemoLib.GBuffers.Effects
 
         public Texture2D DiffuseTexture
         {
-            get => p_DiffuseTexture.GetValueTexture2D();
-            set => p_DiffuseTexture.SetValue(value);
+            get => diffuseTexture;
+            set
+            {
+                diffuseTexture = value;
+                p_DiffuseTexture.SetValue(value);
+                
+                SetTechnique();
+            }
         }
 
         public Texture2D NormalMapTexture
         {
-            get => p_NormalMapTexture.GetValueTexture2D();
-            set => p_NormalMapTexture.SetValue(value);
+            get => normalMapTexture;
+            set
+            {
+                normalMapTexture = value;
+                p_NormalMapTexture.SetValue(value);
+             
+                SetTechnique();
+            }
         }
 
         public Texture2D SpecularMapTexture
         {
-            get => p_SpecularMapTexture.GetValueTexture2D();
-            set => p_SpecularMapTexture.SetValue(value);
+            get => specularMapTexture;
+            set
+            {
+                specularMapTexture = value;
+                p_SpecularMapTexture.SetValue(value);
+             
+                SetTechnique();
+            }
+        }
+
+        public bool Instancing
+        {
+            get => instancing;
+            set
+            {
+                if (instancing == value)
+                    return;
+
+                instancing = value;
+
+                SetTechnique();
+            }
+        }
+
+        public Effect AsEffect() => this;
+
+        public void SetTextures(Texture2D diffuse, Texture2D normalMap = null, Texture2D specularMap = null)
+        {
+            diffuseTexture = diffuse;
+            normalMapTexture = normalMap;
+            specularMapTexture = specularMap;
+
+            p_DiffuseTexture.SetValue(diffuse);
+            p_NormalMapTexture.SetValue(normalMap);
+            p_SpecularMapTexture.SetValue(specularMap);
+
+            SetTechnique();
+        }
+
+        private void SetTechnique()
+        {
+            bool d = diffuseTexture != null;
+            bool n = normalMapTexture != null;
+            bool s = specularMapTexture != null;
+
+            if (instancing)
+            {
+                if (d && n && s)
+                    CurrentTechnique = TechniqueInstanceBumpSpecularMapped;
+                else if (d && n)
+                    CurrentTechnique = TechniqueInstanceBumpMapped;
+                else
+                    CurrentTechnique = TechniqueInstanceTextured;
+            }
+            else
+            {
+                if (d && n && s)
+                    CurrentTechnique = TechniqueBumpSpecularMapped;
+                else if (d && n)
+                    CurrentTechnique = TechniqueBumpMapped;
+                else
+                    CurrentTechnique = TechniqueTextured;
+            }
         }
     }
 }

@@ -73,6 +73,15 @@ struct Surface
     float specPow;
 };
 
+struct Material
+{
+    float3 normal;
+    float4 diffuseColor;
+    float emissive;
+    float specExp;
+    float specIntensity;
+};
+
 Surface unpackGBuffer(float2 texCoords)
 {
     Surface result;
@@ -96,6 +105,19 @@ Surface unpackGBuffer(float2 texCoords)
     result.specInt = specular.y;
     
     return result;
+}
+
+Material createMaterial(Surface surface)
+{
+    Material mat;
+    
+    mat.normal = surface.normal;
+    mat.diffuseColor = float4(surface.color.xyz, 1);
+    mat.specExp = g_SpecExpRange.x + g_SpecExpRange.y * surface.specPow;
+    mat.specIntensity = surface.specInt;
+    mat.emissive = surface.emissive;
+    
+    return mat;
 }
 
 float3 calcWorldPos(float2 csPos, float depth)

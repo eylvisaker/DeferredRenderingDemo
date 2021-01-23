@@ -1,4 +1,7 @@
-﻿using GBufferDemoLib.GBuffers.Effects;
+﻿using GBufferDemoLib.Cameras;
+using GBufferDemoLib.GBuffers.Effects;
+using GBufferDemoLib.Lights;
+using GBufferDemoLib.Shadows;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
@@ -22,20 +25,23 @@ namespace GBufferDemoLib.GBuffers
         private readonly Bloom bloom;
         private readonly Averager luminanceAverager;
         private readonly GraphicsDevice graphics;
+        private readonly ContentManager content;
         private readonly FullScreenDraw fullScreen;
+
+        private readonly DrawStep drawStep = new DrawStep();
 
         private float timeStep;
 
         public BackgroundEffect BackgroundEffect => backgroundEffect;
         public FillGBufferEffect FillEffect => fillEffect;
-        public LightGBufferEffect LightEffect => lighting.Effect;
 
-        public GBufferTargets Targets => targets;
-        public LightingStep Light => lighting;
+        private LightingStep Light => lighting;
 
-        public Matrix View { get; set; }
-        public Matrix Projection { get; set; }
-        public Vector3 EyePosition { get; set; }
+        public Matrix View => Camera.View;
+        public Matrix Projection => Camera.Projection;
+        public Vector3 EyePosition => Camera.Position;
+
+        public Camera Camera { get; set; }
 
         public float Gamma { get; set; } = 1f;
 
@@ -44,7 +50,7 @@ namespace GBufferDemoLib.GBuffers
         public GBuffer(GraphicsDevice graphics, ContentManager content, GBufferInitParams p)
         {
             this.graphics = graphics;
-
+            this.content = content;
             fullScreen = new FullScreenDraw(graphics);
 
             fillEffect = new FillGBufferEffect(content.Load<Effect>("FillGBuffer"));
@@ -59,6 +65,8 @@ namespace GBufferDemoLib.GBuffers
             bloom = new Bloom(graphics, content, fullScreen);
 
             luminanceAverager = new Averager(graphics, content, fullScreen);
+
+            drawStep.GraphicsDevice = graphics;
         }
 
         public void Dispose()
@@ -82,23 +90,45 @@ namespace GBufferDemoLib.GBuffers
             graphics.SetRenderTargets(targets.Color, targets.Depth, targets.Normal, targets.Specular);
         }
 
-        public void BeginGeometry()
+        public void DrawGeometry(Action<DrawStep> drawGeometry)
         {
             graphics.BlendState = BlendState.Opaque;
             graphics.DepthStencilState = DepthStencilState.Default;
 
             FillEffect.View = View;
             FillEffect.Projection = Projection;
+
+            drawStep.Camera = Camera;
+            drawStep.Effect = FillEffect;
+            drawStep.ShadowCastersOnly = false;
+
+            drawGeometry(drawStep);
         }
 
-        public void BeginLighting()
+
+        public void ShadowMap(LightDirectional sunLight, Action<DrawStep> drawGeometry)
         {
-            Light.View = View;
-            Light.Projection = Projection;
-            Light.EyePosition = EyePosition;
+            if (sunLight.ShadowMapper == null)
+            {
+                sunLight.ShadowMapper = new CascadedShadowMapper(graphics, new ShadowSettings(), content);
+            }
+
+            drawStep.ShadowCastersOnly = true;
+
+            sunLight.ShadowMapper.RenderShadowMap(graphics, sunLight, Camera, (c, effect) =>
+            {
+                drawStep.Camera = c;
+                drawStep.Effect = effect;
+
+                drawGeometry(drawStep);
+            });
+        }
+
+        public LightingStep BeginLighting()
+        {
             Light.Gamma = Gamma;
 
-            Light.Begin();
+            Light.Begin(Camera);
 
             graphics.SetRenderTargets(targets.ColorAccum);
             graphics.Clear(Color.Black);
@@ -107,6 +137,8 @@ namespace GBufferDemoLib.GBuffers
             BackgroundEffect.Projection = Projection;
             BackgroundEffect.DepthTexture = targets.Depth;
             BackgroundEffect.Gamma = Gamma;
+
+            return Light;
         }
 
         public void End(bool doBloom = false)
@@ -173,17 +205,6 @@ namespace GBufferDemoLib.GBuffers
         }
 
         /// <summary>
-        /// Prepares a model to render to the gbuffer by setting the effects of all
-        /// its meshparts to the correct effect. This should be called once per model
-        /// after loading.
-        /// </summary>
-        /// <param name="model"></param>
-        public void PrepModel(Model model)
-        {
-            fillEffect.PrepModel(model);
-        }
-
-        /// <summary>
         /// Rebuilds the render targets. Call this when the backbuffer size changes.
         /// </summary>
         public void RebuildTargets()
@@ -191,6 +212,5 @@ namespace GBufferDemoLib.GBuffers
             targets.Rebuild();
             downscaler.Rebuild();
         }
-
     }
 }
