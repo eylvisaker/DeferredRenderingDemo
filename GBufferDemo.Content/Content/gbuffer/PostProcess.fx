@@ -6,9 +6,10 @@
 #define PSMODEL ps_3_0
 #endif
 
+#include "averageLuminance.hlsl"
+
 texture ColorTexture;
 texture BloomTexture;
-texture AverageLuminance;
 
 float GammaReciprocal;
 
@@ -16,9 +17,9 @@ float3 MiddleGrey;
 float3 LumWhiteSqr;
 
 float BaseIntensity;
-float BloomIntensity;
-
 float BaseSaturation;
+
+float BloomIntensity;
 float BloomSaturation;
 
 //////////////////////////////////////////////////////////////////////
@@ -57,17 +58,6 @@ sampler BloomSampler = sampler_state
     Mipfilter = LINEAR;
 };
 
-sampler AverageLuminanceSampler = sampler_state
-{
-    Texture = <AverageLuminanceTexture>;
-    MinFilter = linear;
-    MagFilter = linear;
-    MipFilter = linear;
-    MaxAnisotropy = 1;
-    AddressU = CLAMP;
-    AddressV = CLAMP;
-};
-
 //////////////////////////////////////////////////////////////////////
 ////  Standard Vertex Shader
 //////////////////////////////////////////////////////////////////////
@@ -86,8 +76,6 @@ FullScreen_PixelShaderInput vs_FullScreen(FullScreen_VertexShaderInput input)
 //////////////////////////////////////////////////////////////////////
 ////  Pixel Shaders
 //////////////////////////////////////////////////////////////////////
-
-static const float4 LUM_FACTOR = float4(0.299, 0.587, 0.114, 0);
 
 // Helper for modifying the saturation of a color.
 float3 adjustSaturation(float3 color, float saturation)
@@ -166,34 +154,24 @@ float3 calcBloom(float3 base, float3 bloom, float avgLum)
 {
     float bloomLum = dot(bloom, LUM_FACTOR.xyz);
     
-    float threshold = avgLum * 3 + 50;
-    float bloomFactor = (bloomLum - threshold) / (1 + threshold);
-    
-    if (bloomFactor < 0)
-        return base;
-    
     // Adjust color saturation and intensity.
-    base = adjustSaturation(base, BaseSaturation) * BaseIntensity;
-    bloom = adjustSaturation(bloom, BloomSaturation) * BloomIntensity * bloomFactor;
+    float3 sbase = adjustSaturation(base, BaseSaturation) * BaseIntensity;
+    float3 sbloom = adjustSaturation(bloom, BloomSaturation) * BloomIntensity;
 
-    // Taken from Thornbridge Saga: I think I don't need to do this
-    // because I've reduced the bloom with the bloomFactor.
-    //     Darken down the base image in areas where there is a lot of bloom,
-    //     to prevent things looking excessively burned-out.
-    // base *= (1 - saturate(bloom));
+    // Darken down the base image in areas where there is a lot of bloom,
+    // to prevent things looking excessively burned-out.
+    sbase *= (1 - saturate(sbloom));
 
     // Combine the two images.
-    return base + bloom;
+    return sbase + sbloom;
 }
 
 
 float4 ps_Final(FullScreen_PixelShaderInput input) : COLOR
 {
     float3 hdrColor = tex2D(ColorSampler, input.TexCoords).xyz;
-    float avgLum = dot(tex2D(AverageLuminanceSampler, input.TexCoords), LUM_FACTOR);
-
-    avgLum += 1;
-    
+    float avgLum = avgLuminance(input.TexCoords);
+        
     return toneMap(hdrColor, avgLum);
 }
 
@@ -202,10 +180,8 @@ float4 ps_FinalBloom(FullScreen_PixelShaderInput input) : COLOR
     // Look up the bloom and original base image colors.
     float3 baseColor = tex2D(ColorSampler, input.TexCoords).xyz;
     float3 bloomColor = tex2D(BloomSampler, input.TexCoords).xyz;
-    float avgLum = dot(tex2D(AverageLuminanceSampler, input.TexCoords), LUM_FACTOR);
+    float avgLum = avgLuminance(input.TexCoords);
 
-    avgLum += 1;
-    
     float3 hdrColor = calcBloom(baseColor, bloomColor, avgLum);
     
     return toneMap(hdrColor, avgLum);

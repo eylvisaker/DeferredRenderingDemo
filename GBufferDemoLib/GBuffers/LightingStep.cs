@@ -144,8 +144,6 @@ namespace GBufferDemoLib.GBuffers
                     effect = LightEffect;
                 }
 
-                return;
-
                 fullScreen.Draw(effect);
             }
             finally

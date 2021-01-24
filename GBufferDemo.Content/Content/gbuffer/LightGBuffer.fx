@@ -72,13 +72,7 @@ float3 calcDirectional(float3 position, Material material)
     float3 halfWay = normalize(toEye + DirToLight);
     float NDotH = saturate(dot(halfWay, material.normal));
     finalColor += DirLightColor.rgb * pow(NDotH, material.specExp) * material.specIntensity;
-
-    float emissive = material.emissive;
     
-    // It looks like you can group terms like this here:
-    //   ((1 - emissive) * finalColor + emissive) * material.DiffuseColor.rgb
-    // but the first term in parens is a float4 and the second is float1.
-    // and that's sort of confusing. But it might work right.
     return finalColor * material.diffuseColor.rgb;
 }
 

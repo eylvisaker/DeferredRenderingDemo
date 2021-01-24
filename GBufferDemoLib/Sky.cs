@@ -49,6 +49,8 @@ namespace GBufferDemoLib
             }
         }
 
+        public float NightSkyIntensity { get; set; } = 0.01f;
+
         public CelestialBody Sun { get; set; } = new CelestialBody();
 
         public float NightSkyRotation { get; set; }
@@ -143,7 +145,7 @@ namespace GBufferDemoLib
                          * Matrix.CreateScale(farPlane)
                          * Matrix.CreateTranslation(position);
 
-            Effect.Parameters["Color"].SetValue(Color.White.ToVector3() * 10f);
+            Effect.Parameters["Color"].SetValue(Color.White.ToVector3() * NightSkyIntensity);
 
             foreach (ModelMesh mesh in sphere.Meshes)
             {
@@ -159,7 +161,7 @@ namespace GBufferDemoLib
             float scale = 0.01f * farPlane * body.Scale * (1 + 0.5f * body.Red);
             Vector4 color = body.Color.ToVector4();
 
-            color *= body.BodyIntensity;
+            color *= body.BodyIntensity * 2;
             color.W = 1;
 
             Effect.BackgroundTexture = body.Texture;
@@ -189,8 +191,8 @@ namespace GBufferDemoLib
                 CalcBlue();
                 CalcRed();
 
-                AmbientDown = new Color(10, 20, 30).ToVector3() * 15;
-                AmbientUp = new Color(30, 40, 50).ToVector3() * 15;
+                AmbientDown = new Color(10, 20, 30).ToVector3() * AmbientNightIntensity;
+                AmbientUp = new Color(30, 40, 50).ToVector3() * AmbientNightIntensity;
 
                 if (Blue <= 0)
                 {
@@ -201,8 +203,8 @@ namespace GBufferDemoLib
                 {
                     LightIntensity = Blue * MaxLightIntensity;
 
-                    AmbientDown += new Color(10, 20, 30).ToVector3() * 150 * Blue;
-                    AmbientUp += new Color(40, 40, 40).ToVector3() * 150 * Blue;
+                    AmbientDown += new Color(10, 20, 30).ToVector3() * AmbientDayIntensity * Blue;
+                    AmbientUp += new Color(40, 40, 40).ToVector3() * AmbientDayIntensity * Blue;
 
                     BodyIntensity = MaxBodyIntensity * (0.1f + 0.9f * (Math.Min(Blue, 1)));
                 }
@@ -220,12 +222,16 @@ namespace GBufferDemoLib
             private set => Light.Intensity = value;
         }
 
-        public float MaxLightIntensity { get; set; } = 800f;
+        public float AmbientDayIntensity { get; set; } = 0.15f;
+
+        public float AmbientNightIntensity { get; set; } = 0.015f;
+
+        public float MaxLightIntensity { get; set; } = 0.8f;
 
         /// <summary>
         /// The intensity of the sky at its brightest.
         /// </summary>
-        public float MaxSkyIntensity { get; set; } = 300f;
+        public float MaxSkyIntensity { get; set; } = 0.3f;
 
         public Vector3 AmbientDown { get; internal set; }
         public Vector3 AmbientUp { get; internal set; }
@@ -252,7 +258,7 @@ namespace GBufferDemoLib
         public Color Color { get; set; } = new Color(255, 255, 128);
         
         public float BodyIntensity { get; private set; }
-        public float MaxBodyIntensity { get; set; } = 400f;
+        public float MaxBodyIntensity { get; set; } = 0.9f;
 
         public Texture2D Texture { get; set; }
 

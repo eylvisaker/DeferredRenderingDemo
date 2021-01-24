@@ -60,7 +60,7 @@ namespace GBufferDemoLib.GBuffers.Effects
             t_InstanceBumpMapped = Techniques["InstanceBumped"];
             t_InstanceBumpSpecularMapped = Techniques["InstanceBumpSpeculared"];
 
-            Color = Color.White;
+            Color = new Vector3(1, 1, 1);
             SpecularIntensity = 1;
         }
 
@@ -77,10 +77,17 @@ namespace GBufferDemoLib.GBuffers.Effects
         public EffectTechnique TechniqueInstanceBumpSpecularMapped => t_InstanceBumpSpecularMapped;
 
 
-        public Color Color
+        public Vector3 Color
         {
-            get => new Color(p_Color.GetValueVector4());
-            set => p_Color.SetValue(value.ToVector4());
+            get
+            {
+                Vector4 result = p_Color.GetValueVector4();
+                return new Vector3(result.X, result.Y, result.Z);
+            }
+            set
+            {
+                p_Color.SetValue(new Vector4(value.X, value.Y, value.Z, 1));
+            }
         }
 
         /// <summary>

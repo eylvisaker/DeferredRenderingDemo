@@ -307,7 +307,7 @@ PSOUT_GBuffer packGBuffer(float4 color, float3 normal, float2 depth, float specI
     
     float normedSpecExp = (SpecularExponent - g_SpecExpRange.x) / g_SpecExpRange.y;
     
-    result.Color = float4(color.rgb, Emissive / 255);
+    result.Color = float4(color.rgb, Emissive);
     result.Depth = 1 - d;
     result.Normal = float4(0.5 * (normalize(normal).xyz + 1), 1);
     result.Spec = float4(normedSpecExp, specIntensity * SpecularIntensity, 0, 0); // two free spaces here.. what do to with them?

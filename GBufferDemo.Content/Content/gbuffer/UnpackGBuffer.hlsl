@@ -93,9 +93,16 @@ Surface unpackGBuffer(float2 texCoords)
     
     // Unpack the emissive value, so that the lowest fifty values
     // exist on a fine-grain scale but everything above that is coarser 
-    // grain, up to an emissive value of 1000 at color.a = 1.
+    // grain, up to an emissive value of 2 at color.a = 1.
+    // First scale emissive to integer values from 0-255 (byte storage);
     float emissive = color.a * 255;
-    emissive += saturate(emissive - 50) * 4.87;  
+    
+    // Next scale emissive to 0-1000
+    emissive += saturate(emissive - 50) * 4.634;  
+    
+    // Now scale emissive to actual HDR range we want to use. 
+    // 0.005 puts it from the range of 0-5
+    emissive *= 0.002;
     
     result.color = pow(color.xyz, Gamma);
     result.emissive = emissive;

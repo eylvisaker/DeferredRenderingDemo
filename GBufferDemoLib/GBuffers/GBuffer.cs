@@ -45,7 +45,7 @@ namespace GBufferDemoLib.GBuffers
 
         public float Gamma { get; set; } = 1f;
 
-        public BloomSettings BloomSettings { get; set; } = BloomSettings.PresetSettings[6];
+        public BloomSettings BloomSettings { get; set; } = BloomSettings.PresetSettings[0];
 
         public GBuffer(GraphicsDevice graphics, ContentManager content, GBufferInitParams p)
         {
@@ -145,22 +145,24 @@ namespace GBufferDemoLib.GBuffers
         {
             downscaler.Downscale();
 
+            var averageLuminance = AverageLuminance();
+
             postEffect.Parameters["GammaReciprocal"].SetValue(1 / Gamma);
             postEffect.Parameters["ColorTexture"].SetValue(targets.ColorAccum);
-            postEffect.Parameters["AverageLuminanceTexture"].SetValue(AverageLuminance());
-            postEffect.Parameters["MiddleGrey"].SetValue(150000f);
-            postEffect.Parameters["LumWhiteSqr"].SetValue(1000000f);
+            postEffect.Parameters["AverageLuminanceTexture"].SetValue(averageLuminance);
+            postEffect.Parameters["MiddleGrey"].SetValue(0.25f);
+            postEffect.Parameters["LumWhiteSqr"].SetValue(3f);
 
             if (doBloom)
             {
-                var bloomImage = this.bloom.Blur(targets.ColorAccum, BloomSettings);
+                var bloomImage = this.bloom.Blur(targets.ColorAccum, BloomSettings, averageLuminance, 0.1f);
                 
                 postEffect.CurrentTechnique = postEffect.Techniques["FinalBloom"];
 
                 postEffect.Parameters["BloomIntensity"].SetValue(BloomSettings.BloomIntensity);
                 postEffect.Parameters["BaseIntensity"].SetValue(BloomSettings.BaseIntensity);
-                postEffect.Parameters["BloomSaturation"].SetValue(BloomSettings.BloomSaturation);
                 postEffect.Parameters["BaseSaturation"].SetValue(BloomSettings.BaseSaturation);
+                postEffect.Parameters["BloomSaturation"].SetValue(BloomSettings.BloomSaturation);
                 postEffect.Parameters["BloomTexture"].SetValue(bloomImage);
             }
             else

@@ -14,7 +14,7 @@ namespace GBufferDemoLib.GBuffers
         private readonly FullScreenDraw fullScreen;
         private readonly SpriteBatch spriteBatch;
         private readonly Effect gaussianBlurEffect;
-
+        private readonly Effect bloomFilter;
         private RenderTarget2D scratch, scratch2;
         private BloomSettings settings;
 
@@ -26,17 +26,18 @@ namespace GBufferDemoLib.GBuffers
             this.spriteBatch = new SpriteBatch(graphicsDevice);
 
             gaussianBlurEffect = content.Load<Effect>("GaussianBlur");
+            bloomFilter = content.Load<Effect>("BloomFilter");
         }
 
         /// <summary>
         /// Gets or sets the bloom settings.
         /// </summary>
 
-        public Texture2D Blur(Texture2D image, BloomSettings settings)
+        public Texture2D Blur(Texture2D image, BloomSettings settings, Texture2D averageLuminance, float minThreshold = 0.1f)
         {
             this.settings = settings;
-            
-            int renderTargetWidth  = image.Width;
+
+            int renderTargetWidth = image.Width;
             int renderTargetHeight = image.Height;
 
             if (scratch == null || scratch.Width != renderTargetWidth || scratch.Height != renderTargetHeight)
@@ -48,19 +49,25 @@ namespace GBufferDemoLib.GBuffers
                 scratch2 = new RenderTarget2D(graphics, renderTargetWidth, renderTargetHeight, false, SurfaceFormat.HalfVector4, DepthFormat.None);
             }
 
+            // Pass 0: Filter the source image so that only the bright parts remain
+            bloomFilter.Parameters["BloomMinThreshold"].SetValue(settings.BloomThreshold);
+            bloomFilter.Parameters["AverageLuminanceTexture"].SetValue(averageLuminance);
+
+            DrawFullscreenQuad(scratch, image, bloomFilter);
+
             // Pass 1: draw from rendertarget 1 into rendertarget 2,
             // using a shader to apply a horizontal gaussian blur filter.
             SetBlurEffectParameters(1.0f / renderTargetWidth, 0);
 
-            DrawFullscreenQuad(scratch, image, gaussianBlurEffect);
+            DrawFullscreenQuad(scratch2, scratch, gaussianBlurEffect);
 
             // Pass 2: draw from rendertarget 2 back into rendertarget 1,
             // using a shader to apply a vertical gaussian blur filter.
             SetBlurEffectParameters(0, 1.0f / renderTargetHeight);
 
-            DrawFullscreenQuad(scratch2, scratch, gaussianBlurEffect);
+            DrawFullscreenQuad(scratch, scratch2, gaussianBlurEffect);
 
-            return scratch2;
+            return scratch;
 
             //graphics.SetRenderTarget(renderTarget);
 
@@ -95,8 +102,10 @@ namespace GBufferDemoLib.GBuffers
             float[] sampleWeights = new float[sampleCount];
             Vector2[] sampleOffsets = new Vector2[sampleCount];
 
+            float blurAmount = settings.BlurAmount;
+
             // The first sample always has a zero offset.
-            sampleWeights[0] = ComputeGaussian(0);
+            sampleWeights[0] = ComputeGaussian(0, blurAmount);
             sampleOffsets[0] = new Vector2(0);
 
             // Maintain a sum of all the weighting values.
@@ -107,7 +116,7 @@ namespace GBufferDemoLib.GBuffers
             for (int i = 0; i < sampleCount / 2; i++)
             {
                 // Store weights for the positive and negative taps.
-                float weight = ComputeGaussian(i + 1);
+                float weight = ComputeGaussian(i + 1, blurAmount);
 
                 sampleWeights[i * 2 + 1] = weight;
                 sampleWeights[i * 2 + 2] = weight;
@@ -146,12 +155,10 @@ namespace GBufferDemoLib.GBuffers
         /// Evaluates a single point on the gaussian falloff curve.
         /// Used for setting up the blur filter weightings.
         /// </summary>
-        float ComputeGaussian(float n)
+        float ComputeGaussian(float n, float blurAmount)
         {
-            float theta = settings.BlurAmount;
-
-            return (float)((1.0 / Math.Sqrt(2 * Math.PI * theta)) *
-                           Math.Exp(-(n * n) / (2 * theta * theta)));
+            return (float)((1.0 / Math.Sqrt(2 * Math.PI * blurAmount)) *
+                           Math.Exp(-(n * n) / (2 * blurAmount * blurAmount)));
         }
 
 

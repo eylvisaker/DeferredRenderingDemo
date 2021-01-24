@@ -224,16 +224,16 @@ namespace GBufferDemoLib
 
         private void InitLights()
         {
-            Random r = new Random();
+            Random r = new Random(239847);
 
             lights.Clear();
 
             foreach (Vector3 pt in LatticePoints(Math.Min(latticeSize, 10)))
             {
-                Color clr = new Color((int)(150 + pt.X * 17) % 256, (int)(250 + pt.Y * 11) % 256, (int)(80 + pt.Z * 31) % 256, 255);
+                Color clr = ColorFromHsv(r.Next(360), 1, 1);
                 float phi = 40 * rot.X + pt.X + 10 * (rot.Y + pt.Y);
                 float range = 4; // + (float)Math.Sin(rot.Z * 100 + pt.Z + pt.X) * 3;
-                float intensity = 50;
+                float intensity = 0.05f;
                 Vector3 position = pt + 2f * new Vector3((float)Math.Cos(phi), (float)Math.Sin(phi), (float)Math.Cos(30 * rot.X * Math.Sin(pt.Z) + MathHelper.PiOver2));
 
                 if (pt == Vector3.Zero)
@@ -241,7 +241,7 @@ namespace GBufferDemoLib
                     range = 100;
                     phi *= 0.2f;
 
-                    intensity = 300;
+                    intensity = 0.3f;
                     clr = Color.White;
                     position = 100f * new Vector3((float)Math.Cos(phi), (float)Math.Sin(phi), 0);
                 }
@@ -277,12 +277,12 @@ namespace GBufferDemoLib
 
             DrawSky(graphics);
 
-            gbuffer.End(doBloom: false);
+            gbuffer.End(doBloom: true);
         }
 
         private void UpdateSky()
         {
-            float angle = rot.X - 0.2f;
+            float angle = rot.X - 1f;
 
             sky.NightSkyRotation = angle * 0.1f;
             sky.Sun.DirectionTo = new Vector3(
@@ -310,7 +310,7 @@ namespace GBufferDemoLib
         {
             drawStep.Effect.SetTextures(surface);
             drawStep.Effect.Emissive = 0;
-            drawStep.Effect.Color = Color.White;
+            drawStep.Effect.Color = Color.White.ToVector3();
             drawStep.Effect.Instancing = false;
 
             float phi = (-0.1f * rot.X) % MathHelper.TwoPi;
@@ -337,11 +337,11 @@ namespace GBufferDemoLib
             {
                 PointLight light = lights[i];
 
-                drawStep.Effect.Color = light.Color;
+                drawStep.Effect.Color = light.Color.ToVector3() * 2f;
                 drawStep.Effect.World = Matrix.CreateScale(0.1f) *
-                                Matrix.CreateTranslation(light.Position);
+                                        Matrix.CreateTranslation(light.Position);
 
-                drawStep.Effect.Emissive = light.Intensity;
+                drawStep.Effect.Emissive = 1f;
 
                 if (i == 0)
                 {
@@ -359,7 +359,7 @@ namespace GBufferDemoLib
         {
             var graphics = drawStep.GraphicsDevice;
 
-            drawStep.Effect.Color = Color.White;
+            drawStep.Effect.Color = Color.White.ToVector3();
             drawStep.Effect.SpecularExponent = 100;
             drawStep.Effect.SpecularIntensity = 0.9f;
 
@@ -490,5 +490,48 @@ namespace GBufferDemoLib
                 }
             }
         }
+
+
+        /// <summary>
+        /// Returns a Color object calculated from hue, saturation and value.
+        /// See algorithm at http://en.wikipedia.org/wiki/HSL_and_HSV#From_HSV
+        /// </summary>
+        /// <param name="hue">The hue angle in degrees.</param>
+        /// <param name="saturation">A value from 0 to 1 representing saturation.</param>
+        /// <param name="value">A value from 0 to 1 representing the value.</param>
+        /// <returns></returns>
+        public static Color ColorFromHsv(double hue, double saturation, double value)
+        {
+            while (hue < 0)
+            {
+                hue += 360;
+            }
+
+            if (hue >= 360)
+            {
+                hue = hue % 360;
+            }
+
+            double hp = hue / 60;
+            double chroma = value * saturation;
+            double x = chroma * (1 - Math.Abs(hp % 2 - 1));
+
+            double r1 = 0, b1 = 0, g1 = 0;
+
+            switch ((int)hp)
+            {
+                case 0: r1 = chroma; g1 = x; break;
+                case 1: r1 = x; g1 = chroma; break;
+                case 2: g1 = chroma; b1 = x; break;
+                case 3: g1 = x; b1 = chroma; break;
+                case 4: r1 = x; b1 = chroma; break;
+                case 5: r1 = chroma; b1 = x; break;
+            }
+
+            double m = value - chroma;
+
+            return new Color((int)(255 * (r1 + m)), (int)(255 * (g1 + m)), (int)(255 * (b1 + m)));
+        }
+
     }
 }

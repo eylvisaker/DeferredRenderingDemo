@@ -5,7 +5,7 @@ namespace GBufferDemoLib.GBuffers
 {
     public interface IDrawEffect : IEffectMatrices
     {
-        Color Color { get; set; }
+        Vector3 Color { get; set; }
         float SpecularExponent { get; set; }
         float SpecularIntensity { get; set; }
         float Emissive { get; set; }

@@ -11,6 +11,7 @@
   <ItemGroup>
     <MonoGameContentReference Include="$(MSBuildThisFileDirectory)Content\Content.mgcb" />
     <None Include="$(MSBuildThisFileDirectory)Content\Content.mgcb" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\averageLuminance.hlsl" />
     <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\Background.fx" />
     <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\Clear.fx" />
     <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\Downscale.fx" />
