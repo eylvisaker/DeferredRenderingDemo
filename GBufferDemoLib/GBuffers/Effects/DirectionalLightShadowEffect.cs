@@ -22,6 +22,7 @@ namespace GBufferDemoLib.GBuffers.Effects
         private readonly EffectParameter p_diffuseColor;
         private readonly EffectParameter p_world;
         private readonly EffectParameter p_viewProjection;
+        private readonly EffectParameter p_shadowMapSize;
         private readonly EffectParameter[] p_shadowMaps;
 
         public bool VisualizeCascades { get; set; }
@@ -39,7 +40,6 @@ namespace GBufferDemoLib.GBuffers.Effects
         public Vector3 DiffuseColor { get; set; }
         public Matrix World { get; set; }
         public Matrix ViewProjection { get; set; }
-        public Texture2D ShadowMap { get; set; }
 
         public DirectionalLightShadowEffect(Effect cloneSource) : base(cloneSource)
         {
@@ -55,7 +55,8 @@ namespace GBufferDemoLib.GBuffers.Effects
             p_diffuseColor   = Parameters["DiffuseColor"];
             p_world          = Parameters["World"];
             p_viewProjection = Parameters["ViewProjection"];
-            
+            p_shadowMapSize = Parameters["shadowMapSize"];
+
             p_shadowMaps = new EffectParameter[4];
 
             for (int i = 0; i < 4; i++)
@@ -84,6 +85,8 @@ namespace GBufferDemoLib.GBuffers.Effects
             p_lightColor.SetValue(light.ColorIntensity);
             p_world.SetValue(World);
             p_viewProjection.SetValue(ViewProjection);
+            p_shadowMapSize.SetValue(new Vector2(light.ShadowMapper.ShadowMaps[0].Width,
+                                                 light.ShadowMapper.ShadowMaps[0].Height));
 
             for (int i = 0; i < 4; i++)
             {

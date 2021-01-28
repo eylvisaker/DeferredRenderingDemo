@@ -24,6 +24,7 @@ texture ColorTexture;
 texture DepthTexture;
 texture NormalTexture;
 texture SpecularTexture;
+float2 shadowMapSize;
 
 sampler ColorSampler = sampler_state
 {
@@ -203,7 +204,7 @@ struct Point_VertexShaderInput
 
 //////////////////////////////////////////////////////////////////////
 
-static const uint NumCascades = 4;
+static const int NumCascades = 4;
 
 // Parameters.
 
@@ -233,19 +234,11 @@ SamplerComparisonState ShadowSampler0 : register(s4);
 SamplerComparisonState ShadowSampler1 : register(s5);
 SamplerComparisonState ShadowSampler2 : register(s6);
 SamplerComparisonState ShadowSampler3 : register(s7);
-sampler mysamp;
+sampler shadowSampler;
 
 float ShadowMapSampleCmpLevelZero(float2 uv, uint cascadeIdx, float z)
 { 
-    //float r;
-    
-    //if (cascadeIdx == 0)
-    //{
-    //    r = ShadowMap0.Sample(mysamp, uv);
-    //    return saturate(1000 * (r - z));
-    //}
-    
-    
+#if HLSL
     
     if (cascadeIdx == 0)
     {
@@ -263,6 +256,32 @@ float ShadowMapSampleCmpLevelZero(float2 uv, uint cascadeIdx, float z)
     {
         return ShadowMap3.SampleCmpLevelZero(ShadowSampler3, uv, z);
     }
+
+#else
+        
+    float r;
+    
+    if (cascadeIdx == 0)
+    {
+        r = ShadowMap0.Sample(shadowSampler, uv).r;
+    }
+    else if (cascadeIdx == 1)
+    {
+        r = ShadowMap1.Sample(shadowSampler, uv).r;
+    }
+    else if (cascadeIdx == 2)
+    {
+        r = ShadowMap2.Sample(shadowSampler, uv).r;
+    }
+    else if (cascadeIdx == 1)
+    {
+        r = ShadowMap3.Sample(shadowSampler, uv).r;
+    }
+    
+    return r > z;
+    
+#endif
+    
 }
 
 // Pixel shader.
@@ -280,9 +299,7 @@ float SampleShadowMapOptimizedPCF(float3 shadowPos,
     float3 shadowPosDX, float3 shadowPosDY,
     uint cascadeIdx, uint filterSize)
 {
-    float2 shadowMapSize;
     float numSlices;
-    ShadowMap0.GetDimensions(shadowMapSize.x, shadowMapSize.y);
 
     float lightDepth = shadowPos.z;
 
@@ -446,9 +463,7 @@ float3 SampleShadowCascade(
 
 float3 GetShadowPosOffset(float nDotL, float3 normal)
 {
-    float2 shadowMapSize;
     float numSlices;
-    ShadowMap0.GetDimensions(shadowMapSize.x, shadowMapSize.y);
 
     float texelSize = 2.0f / shadowMapSize.x;
     float nmlOffsetScale = saturate(1.0f - nDotL);
@@ -463,11 +478,11 @@ float3 ShadowVisibility(
     uint filterSize)
 {
     float3 shadowVisibility = 1.0f;
-    uint cascadeIdx = 0;
+    int cascadeIdx = 0;
 
     // Figure out which cascade to sample from.
     [unroll]
-    for (uint i = 0; i < NumCascades - 1; ++i)
+    for (int i = 0; i < NumCascades - 1; ++i)
     {
         [flatten]
         if (depthVS > CascadeSplits[i])
@@ -541,7 +556,7 @@ float4 ps_DirectionShadow(FullScreen_PixelShaderInput input,
     
     float3 position = surface.worldPos;
     float3 normalWS = mat.normal;
-    float3 diffuseAlbedo = mat.diffuseColor;
+    float3 diffuseAlbedo = mat.diffuseColor.rgb;
     
     float depthVS = surface.depthVS;
     

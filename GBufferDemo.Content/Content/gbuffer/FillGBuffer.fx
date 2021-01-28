@@ -259,9 +259,9 @@ PSIN_Bumped vs_Bumped(VertexShaderInput_Bumped input)
     return output;
 }
 
-PSIN_Bumped vs_InstanceTextured(VertexShaderInput_Textured input, float4x4 instanceTransform : BLENDWEIGHT0)
+PSIN_Textured vs_InstanceTextured(VertexShaderInput_Textured input, float4x4 instanceTransform : BLENDWEIGHT0)
 {
-    PSIN_Bumped output;
+    PSIN_Textured output;
     
     float3x3 normInstance = transpose((float3x3) instanceTransform);
     
