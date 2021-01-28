@@ -6,8 +6,202 @@
 #define PSMODEL ps_3_0
 #endif
 
-#include "unpackGBuffer.hlsl"
-#include "fullscreen.hlsl"
+// #include "unpackGBuffer.hlsl"
+
+#if HLSL
+#define VSMODEL vs_5_0
+#define PSMODEL ps_5_0
+#else
+#define VSMODEL vs_3_0
+#define PSMODEL ps_3_0
+#endif
+
+float Gamma;
+
+float4x4 ViewProjectionInv;
+
+texture ColorTexture;
+texture DepthTexture;
+texture NormalTexture;
+texture SpecularTexture;
+
+sampler ColorSampler = sampler_state
+{
+    Texture = <ColorTexture>;
+    AddressU = CLAMP;
+    AddressV = CLAMP;
+    MagFilter = LINEAR;
+    MinFilter = LINEAR;
+    Mipfilter = LINEAR;
+};
+
+sampler DepthSampler = sampler_state
+{
+    Texture = <DepthTexture>;
+    AddressU = CLAMP;
+    AddressV = CLAMP;
+    MagFilter = POINT;
+    MinFilter = POINT;
+    Mipfilter = POINT;
+};
+
+sampler NormalSampler = sampler_state
+{
+    Texture = <NormalTexture>;
+    AddressU = CLAMP;
+    AddressV = CLAMP;
+    MagFilter = POINT;
+    MinFilter = POINT;
+    Mipfilter = POINT;
+};
+
+sampler SpecularSampler = sampler_state
+{
+    Texture = <SpecularTexture>;
+    AddressU = CLAMP;
+    AddressV = CLAMP;
+    MagFilter = POINT;
+    MinFilter = POINT;
+    Mipfilter = POINT;
+};
+
+//////////////////////////////////////////////////////////////////////
+////  Reading the GBuffer
+//////////////////////////////////////////////////////////////////////
+
+// This must match the same named constants in FillGBuffer.fx
+static const float2 g_SpecExpRange = { 0.1, 16384.1 };
+
+struct Surface
+{
+    float depth;
+    float depthVS;
+    float3 worldPos;
+    float3 color;
+    float alpha;
+    float emissive;
+    float3 normal;
+    float specInt;
+    float specPow;
+};
+
+struct Material
+{
+    float3 normal;
+    float4 diffuseColor;
+    float emissive;
+    float specExp;
+    float specIntensity;
+};
+
+Surface unpackGBuffer(float2 texCoords)
+{
+    Surface result;
+    
+    float4 color = tex2D(ColorSampler, texCoords);
+    float depth = 1 - tex2D(DepthSampler, texCoords).x;
+    float3 normal = tex2D(NormalSampler, texCoords).xyz;
+    float2 specular = tex2D(SpecularSampler, texCoords).xy;
+    
+    // Unpack the emissive value, so that the lowest fifty values
+    // exist on a fine-grain scale but everything above that is coarser 
+    // grain, up to an emissive value of 2 at color.a = 1.
+    // First scale emissive to integer values from 0-255 (byte storage);
+    float emissive = color.a * 255;
+    
+    // Next scale emissive to 0-1000
+    emissive += saturate(emissive - 50) * 4.634;
+    
+    // Now scale emissive to actual HDR range we want to use. 
+    // 0.005 puts it from the range of 0-5
+    emissive *= 0.002;
+    
+    result.color = pow(color.xyz, Gamma);
+    result.emissive = emissive;
+    result.depth = depth;
+    result.normal = normal * 2 - 1;
+    result.specPow = specular.x;
+    result.specInt = specular.y;
+    
+    float4 position;
+    
+    position.x = texCoords.x * 2 - 1;
+    position.y = -(texCoords.y * 2 - 1);
+    position.z = depth;
+    position.w = 1.0;
+    
+    float4 worldPos = mul(position, ViewProjectionInv);
+    
+    result.depthVS = 1 / worldPos.w;
+    result.worldPos = (worldPos / worldPos.w).xyz;
+    
+    return result;
+}
+
+Material createMaterial(Surface surface)
+{
+    Material mat;
+    
+    mat.normal = surface.normal;
+    mat.diffuseColor = float4(surface.color.xyz, 1);
+    mat.specExp = g_SpecExpRange.x + g_SpecExpRange.y * surface.specPow;
+    mat.specIntensity = surface.specInt;
+    mat.emissive = surface.emissive;
+    
+    return mat;
+}
+
+
+
+// #include "fullscreen.hlsl"
+
+
+
+
+
+float2 TexelOffset;
+
+//////////////////////////////////////////////////////////////////////
+
+struct FullScreen_VertexShaderInput
+{
+    float4 Position : POSITION;
+};
+
+struct FullScreen_PixelShaderInput
+{
+    float4 Position : SV_POSITION;
+    float2 TexCoords : TEXCOORD0;
+};
+
+
+
+//////////////////////////////////////////////////////////////////////
+////  Standard Vertex Shader
+//////////////////////////////////////////////////////////////////////
+
+FullScreen_PixelShaderInput vs_FullScreen(FullScreen_VertexShaderInput input)
+{
+    FullScreen_PixelShaderInput output;
+    
+    output.Position = input.Position;
+    output.TexCoords.x = (1 + input.Position.x) / 2;
+    output.TexCoords.y = (1 - input.Position.y) / 2;
+
+    output.TexCoords += TexelOffset;
+    
+    return output;
+}
+
+struct Point_VertexShaderInput
+{
+    float3 Position : POSITION;
+};
+
+
+
+
+//////////////////////////////////////////////////////////////////////
 
 static const uint NumCascades = 4;
 
@@ -24,25 +218,35 @@ float4 CascadeScales[NumCascades];
 
 float3 LightDirection;
 float3 LightColor;
-float3 DiffuseColor;
 
 float Bias;
 float OffsetScale;
 
 // Resources.
 
-Texture2D ShadowMap0 : register(t0);
-Texture2D ShadowMap1 : register(t1);
-Texture2D ShadowMap2 : register(t2);
-Texture2D ShadowMap3 : register(t3);
+Texture2D ShadowMap0 : register(t4);
+Texture2D ShadowMap1 : register(t5);
+Texture2D ShadowMap2 : register(t6);
+Texture2D ShadowMap3 : register(t7);
 
-SamplerComparisonState ShadowSampler0 : register(s0);
-SamplerComparisonState ShadowSampler1 : register(s1);
-SamplerComparisonState ShadowSampler2 : register(s2);
-SamplerComparisonState ShadowSampler3 : register(s3);
+SamplerComparisonState ShadowSampler0 : register(s4);
+SamplerComparisonState ShadowSampler1 : register(s5);
+SamplerComparisonState ShadowSampler2 : register(s6);
+SamplerComparisonState ShadowSampler3 : register(s7);
+sampler mysamp;
 
 float ShadowMapSampleCmpLevelZero(float2 uv, uint cascadeIdx, float z)
-{
+{ 
+    //float r;
+    
+    //if (cascadeIdx == 0)
+    //{
+    //    r = ShadowMap0.Sample(mysamp, uv);
+    //    return saturate(1000 * (r - z));
+    //}
+    
+    
+    
     if (cascadeIdx == 0)
     {
         return ShadowMap0.SampleCmpLevelZero(ShadowSampler0, uv, z);
@@ -306,36 +510,56 @@ float3 ShadowVisibility(
     return shadowVisibility;
 }
 
+float3 calcDirectional(float3 position, Material material)
+{
+    // Phong diffuse
+    float NDotL = dot(LightDirection, material.normal);
+    float3 finalColor = LightColor.rgb * saturate(NDotL);
+
+    // Blinn specular
+    float3 toEye = CameraPosWS - position;
+    toEye = normalize(toEye);
+    float3 halfWay = normalize(toEye + LightDirection);
+    float NDotH = saturate(dot(halfWay, material.normal));
+    
+    // prevent bleed-through. If NDotL is negative, then the surface is
+    // facing away from the light and shouldn't have specular lighting. 
+    // But NDotH can still be positive.
+    NDotH *= saturate(NDotL * 10);
+     
+    finalColor += LightColor.rgb * pow(NDotH, material.specExp) * material.specIntensity;
+    
+    return finalColor * material.diffuseColor.rgb;
+}
+
 float4 ps_DirectionShadow(FullScreen_PixelShaderInput input,
     bool visualizeCascades, bool filterAcrossCascades, 
     uint filterSize)
 {
     Surface surface = unpackGBuffer(input.TexCoords);
     Material mat = createMaterial(surface);
-    float3 position = calcWorldPos(input.TexCoords, surface.depth);
     
-    // Normalize after interpolation.
+    float3 position = surface.worldPos;
     float3 normalWS = mat.normal;
-
-    // Convert color to grayscale, just beacuse it looks nicer.
     float3 diffuseAlbedo = mat.diffuseColor;
     
-    // Not actually the depth in view space...
-    float depthVS = surface.depth;
+    float depthVS = surface.depthVS;
     
     float nDotL = saturate(dot(normalWS, LightDirection));
     uint2 screenPos = uint2(0, 0); // apparently screenPos is unused??
     float3 shadowVisibility = ShadowVisibility(
-        position, depthVS, nDotL, normalWS, screenPos, 
+        position, depthVS, nDotL, normalWS, screenPos,
         filterAcrossCascades, visualizeCascades, filterSize);
-
-    float3 lighting = 0.0f;
+    
+    float3 lighting = calcDirectional(position, mat);
 
     // Add the directional light.
-    lighting = nDotL * LightColor * diffuseAlbedo * (1.0f / 3.14159f) * shadowVisibility;
+    lighting *= shadowVisibility;
     
     return float4(lighting, 1);
 }
+
+
 
 float4 ps_VisualizeFalseFilterFalseFilterSizeFilter2x2(FullScreen_PixelShaderInput input) : COLOR
 {

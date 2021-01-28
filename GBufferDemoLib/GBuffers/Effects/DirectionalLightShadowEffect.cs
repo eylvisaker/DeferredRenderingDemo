@@ -8,7 +8,7 @@ using System.Text;
 
 namespace GBufferDemoLib.GBuffers.Effects
 {
-    public class DirectionalLightShadowEffect : Effect
+    public class DirectionalLightShadowEffect : LightGBufferEffect
     {
         private readonly EffectParameter p_cameraPosWS;
         private readonly EffectParameter p_shadowMatrix;
@@ -55,7 +55,7 @@ namespace GBufferDemoLib.GBuffers.Effects
             p_diffuseColor   = Parameters["DiffuseColor"];
             p_world          = Parameters["World"];
             p_viewProjection = Parameters["ViewProjection"];
-
+            
             p_shadowMaps = new EffectParameter[4];
 
             for (int i = 0; i < 4; i++)
@@ -73,25 +73,22 @@ namespace GBufferDemoLib.GBuffers.Effects
             p_cameraPosWS.SetValue(CameraPosWS);
             p_shadowMatrix.SetValue(ShadowMatrix);
             p_cascadeSplits.SetValue(new Vector4(light.ShadowMapper.CascadeSplits[0], 
-                                                         light.ShadowMapper.CascadeSplits[1],
-                                                         light.ShadowMapper.CascadeSplits[2],
-                                                         light.ShadowMapper.CascadeSplits[3]));
+                                                 light.ShadowMapper.CascadeSplits[1],
+                                                 light.ShadowMapper.CascadeSplits[2],
+                                                 light.ShadowMapper.CascadeSplits[3]));
             p_cascadeOffsets.SetValue(light.ShadowMapper.CascadeOffsets);
             p_cascadeScales.SetValue(light.ShadowMapper.CascadeScales);
             p_bias.SetValue(Bias);
             p_offsetScale.SetValue(OffsetScale);
             p_lightDirection.SetValue(light.DirectionToLight);
-            p_lightColor.SetValue(light.Color.ToVector3());
-            p_diffuseColor.SetValue(light.Color.ToVector3());
+            p_lightColor.SetValue(light.ColorIntensity);
             p_world.SetValue(World);
             p_viewProjection.SetValue(ViewProjection);
 
             for (int i = 0; i < 4; i++)
             {
-                p_shadowMaps[i].SetValue(light.ShadowMapper.ShadowMaps[i]);
+                p_shadowMaps[i]?.SetValue(light.ShadowMapper.ShadowMaps[i]);
             }
-
-            CurrentTechnique.Passes[0].Apply();
         }
     }
 }

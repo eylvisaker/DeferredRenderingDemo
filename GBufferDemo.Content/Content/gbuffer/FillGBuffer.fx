@@ -209,6 +209,22 @@ PSIN_Textured vs_ColoredSprite(VertexShaderInput_ColoredSprite input)
     return output;
 }
 
+PSIN_Textured vs_Flat(VertexShaderInput_Textured input)
+{
+    PSIN_Textured output;
+
+    float4 pos = mul(input.Position, WorldViewProjection);
+    
+    output.Position = pos;
+    output.TexCoords = input.TexCoords;
+    output.Normal = mul(input.Normal, World);
+    output.Color = Color;
+    output.Depth.x = pos.z;
+    output.Depth.y = pos.w;
+
+    return output;
+}
+
 PSIN_Textured vs_Textured(VertexShaderInput_Textured input)
 {
     PSIN_Textured output;
@@ -446,6 +462,15 @@ technique Sprite
     }
 }
 
+technique Flat
+{
+    pass Pass0
+    {
+        VertexShader = compile VSMODEL vs_Textured();
+        PixelShader = compile PSMODEL ps_Textured();
+    }
+}
+
 technique Textured
 {
     pass Pass0
@@ -473,11 +498,20 @@ technique BumpSpeculared
     }
 }
 
+technique InstanceFlat
+{
+    pass Pass0
+    {
+        VertexShader = compile VSMODEL vs_InstanceTextured();
+        PixelShader = compile PSMODEL ps_Textured();
+    }
+}
+
 technique InstanceTextured
 {
     pass Pass0
     {
-        VertexShader = compile VSMODEL vs_InstanceBumped();
+        VertexShader = compile VSMODEL vs_InstanceTextured();
         PixelShader = compile PSMODEL ps_Textured();
     }
 }

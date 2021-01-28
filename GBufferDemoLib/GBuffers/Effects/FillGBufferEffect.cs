@@ -23,9 +23,11 @@ namespace GBufferDemoLib.GBuffers.Effects
         private EffectParameter p_SpecularExponent;
         private EffectParameter p_SpecularIntensity;
         private EffectTechnique t_Sprite;
+        private EffectTechnique t_Flat;
         private EffectTechnique t_Textured;
         private EffectTechnique t_BumpMapped;
         private EffectTechnique t_BumpSpecularMapped;
+        private EffectTechnique t_InstanceFlat;
         private EffectTechnique t_InstanceTextured;
         private EffectTechnique t_InstanceBumpMapped;
         private EffectTechnique t_InstanceBumpSpecularMapped;
@@ -53,9 +55,11 @@ namespace GBufferDemoLib.GBuffers.Effects
             p_SpecularIntensity = Parameters["SpecularIntensity"];
 
             t_Sprite = Techniques["Sprite"];
+            t_Flat = Techniques["Flat"];
             t_Textured = Techniques["Textured"];
             t_BumpMapped = Techniques["Bumped"];
             t_BumpSpecularMapped = Techniques["BumpSpeculared"];
+            t_InstanceFlat = Techniques["Flat"];
             t_InstanceTextured = Techniques["InstanceTextured"];
             t_InstanceBumpMapped = Techniques["InstanceBumped"];
             t_InstanceBumpSpecularMapped = Techniques["InstanceBumpSpeculared"];
@@ -69,9 +73,11 @@ namespace GBufferDemoLib.GBuffers.Effects
         /// The default normal is applied.
         /// </summary>
         public EffectTechnique TechniqueSprite => t_Sprite;
+        public EffectTechnique TechniqueFlat => t_Flat;
         public EffectTechnique TechniqueTextured => t_Textured;
         public EffectTechnique TechniqueBumpMapped => t_BumpMapped;
         public EffectTechnique TechniqueBumpSpecularMapped => t_BumpSpecularMapped;
+        public EffectTechnique TechniqueInstanceFlat => t_InstanceFlat;
         public EffectTechnique TechniqueInstanceTextured => t_InstanceTextured;
         public EffectTechnique TechniqueInstanceBumpMapped => t_InstanceBumpMapped;
         public EffectTechnique TechniqueInstanceBumpSpecularMapped => t_InstanceBumpSpecularMapped;
@@ -227,8 +233,10 @@ namespace GBufferDemoLib.GBuffers.Effects
                     CurrentTechnique = TechniqueInstanceBumpSpecularMapped;
                 else if (d && n)
                     CurrentTechnique = TechniqueInstanceBumpMapped;
-                else
+                else if (d)
                     CurrentTechnique = TechniqueInstanceTextured;
+                else
+                    CurrentTechnique = TechniqueInstanceFlat;
             }
             else
             {
@@ -236,8 +244,10 @@ namespace GBufferDemoLib.GBuffers.Effects
                     CurrentTechnique = TechniqueBumpSpecularMapped;
                 else if (d && n)
                     CurrentTechnique = TechniqueBumpMapped;
-                else
+                else if (d)
                     CurrentTechnique = TechniqueTextured;
+                else
+                    CurrentTechnique = TechniqueFlat;
             }
         }
     }

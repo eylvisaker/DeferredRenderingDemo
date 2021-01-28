@@ -23,7 +23,7 @@ namespace GBufferDemoLib.GBuffers
 
         public LightGBufferEffect LightEffect
         {
-            get => effect; 
+            get => effect;
             set
             {
                 effect = value;
@@ -81,7 +81,12 @@ namespace GBufferDemoLib.GBuffers
 
             LightEffect.Parameters["EyePosition"].SetValue(camera.Position);
             LightEffect.Parameters["ViewProjectionInv"].SetValue(viewProjectionInv);
+            LightEffect.Parameters["TexelOffset"].SetValue(new Vector2(0, 0));
             LightEffect.Gamma = Gamma;
+
+            directionalLightEffect.Parameters["ViewProjectionInv"].SetValue(viewProjectionInv);
+            directionalLightEffect.Parameters["TexelOffset"].SetValue(new Vector2(0, 0));
+            directionalLightEffect.Gamma = Gamma;
 
             LightEffect.ColorTexture = targets.Color;
             LightEffect.DepthTexture = targets.Depth;
@@ -109,53 +114,44 @@ namespace GBufferDemoLib.GBuffers
 
         public void DirectionalLight(LightDirectional light)
         {
-            Effect effect;
-
-            try
+            if (light.EnableShadows && light.ShadowMapper != null)
             {
-                if (light.EnableShadows && light.ShadowMapper != null)
-                {
-                    graphics.SamplerStates[0] = CascadedShadowMapper.ShadowMapSamplerState;
-                    graphics.SamplerStates[1] = CascadedShadowMapper.ShadowMapSamplerState;
-                    graphics.SamplerStates[2] = CascadedShadowMapper.ShadowMapSamplerState;
-                    graphics.SamplerStates[3] = CascadedShadowMapper.ShadowMapSamplerState;
+                graphics.SamplerStates[4] = CascadedShadowMapper.ShadowMapSamplerState;
+                graphics.SamplerStates[5] = CascadedShadowMapper.ShadowMapSamplerState;
+                graphics.SamplerStates[6] = CascadedShadowMapper.ShadowMapSamplerState;
+                graphics.SamplerStates[7] = CascadedShadowMapper.ShadowMapSamplerState;
 
-                    directionalLightEffect.VisualizeCascades = light.ShadowMapper.Settings.VisualizeCascades;
-                    directionalLightEffect.FilterAcrossCascades = light.ShadowMapper.Settings.FilterAcrossCascades;
-                    directionalLightEffect.FilterSize = light.ShadowMapper.Settings.FixedFilterSize;
-                    directionalLightEffect.Bias = light.ShadowMapper.Settings.Bias;
-                    directionalLightEffect.OffsetScale = light.ShadowMapper.Settings.OffsetScale;
+                directionalLightEffect.VisualizeCascades = light.ShadowMapper.Settings.VisualizeCascades;
+                directionalLightEffect.FilterAcrossCascades = light.ShadowMapper.Settings.FilterAcrossCascades;
+                directionalLightEffect.FilterSize = light.ShadowMapper.Settings.FixedFilterSize;
+                directionalLightEffect.Bias = light.ShadowMapper.Settings.Bias;
+                directionalLightEffect.OffsetScale = light.ShadowMapper.Settings.OffsetScale;
+                directionalLightEffect.ShadowMatrix = light.ShadowMapper.ShadowMatrix;
 
-                    directionalLightEffect.ViewProjection = camera.ViewProjection;
-                    directionalLightEffect.CameraPosWS = camera.Position;
+                directionalLightEffect.ViewProjection = camera.ViewProjection;
+                directionalLightEffect.CameraPosWS = camera.Position;
 
+                directionalLightEffect.ColorTexture = targets.Color;
+                directionalLightEffect.DepthTexture = targets.Depth;
+                directionalLightEffect.NormalTexture = targets.Normal;
+                directionalLightEffect.SpecularTexture = targets.Specular;
 
-                    directionalLightEffect.Apply(light);
+                directionalLightEffect.Apply(light);
 
-                    effect = directionalLightEffect;
-                }
-                else
-                {
-                    LightEffect.Parameters["DirToLight"].SetValue(light.DirectionToLight);
-                    LightEffect.Parameters["DirLightColor"].SetValue(light.ColorIntensity);
-
-                    LightEffect.CurrentTechnique = LightEffect.Techniques["DirectionalLighting"];
-
-                    effect = LightEffect;
-                }
-
-                fullScreen.Draw(effect);
+                fullScreen.Draw(directionalLightEffect);
             }
-            finally
+            else
             {
-                graphics.SamplerStates[0] = SamplerState.LinearClamp;
-                graphics.SamplerStates[1] = SamplerState.LinearClamp;
-                graphics.SamplerStates[2] = SamplerState.LinearClamp;
-                graphics.SamplerStates[3] = SamplerState.LinearClamp;
+                LightEffect.Parameters["DirToLight"].SetValue(light.DirectionToLight);
+                LightEffect.Parameters["DirLightColor"].SetValue(light.ColorIntensity);
+
+                LightEffect.CurrentTechnique = LightEffect.Techniques["DirectionalLighting"];
+
+                fullScreen.Draw(LightEffect);
             }
         }
 
-        public void ApplyLights(IReadOnlyList<PointLight> lights)
+        public void PointLights(IReadOnlyList<PointLight> lights)
         {
             // Easiest way to make sure there is no funny business when the camera is near the surface of the sphere
             // is to actually cull the front faces of the sphere instead of its backfaces.

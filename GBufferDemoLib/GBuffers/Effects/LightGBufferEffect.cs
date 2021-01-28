@@ -32,25 +32,25 @@ namespace GBufferDemoLib.GBuffers.Effects
         public Texture2D ColorTexture
         {
             get => p_ColorTexture.GetValueTexture2D();
-            set => p_ColorTexture.SetValue(value);
+            set => p_ColorTexture?.SetValue(value);
         }
 
         public Texture2D DepthTexture
         {
             get => p_DepthTexture.GetValueTexture2D();
-            set => p_DepthTexture.SetValue(value);
+            set => p_DepthTexture?.SetValue(value);
         }
 
         public Texture2D NormalTexture
         {
             get => p_NormalTexture.GetValueTexture2D();
-            set => p_NormalTexture.SetValue(value);
+            set => p_NormalTexture?.SetValue(value);
         }
 
         public Texture2D SpecularTexture
         {
             get => p_SpecularTexture.GetValueTexture2D();
-            set => p_SpecularTexture.SetValue(value);
+            set => p_SpecularTexture?.SetValue(value);
         }
 
         public Matrix WorldViewProjection

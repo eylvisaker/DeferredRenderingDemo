@@ -35,7 +35,7 @@ namespace GBufferDemoLib
             nightSky = content.Load<Texture2D>("sky/nightsky");
 
             Sun.Texture = content.Load<Texture2D>("white");
-
+            Sun.Light.EnableShadows = true;
         }
 
         public BackgroundEffect Effect

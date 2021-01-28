@@ -43,8 +43,8 @@ technique ShadowMap
 {
     pass
     {
-        VertexShader = compile vs_4_0 vs_ShadowMap();
-        PixelShader = compile ps_4_0 ps_ShadowMap();
+        VertexShader = compile VSMODEL vs_ShadowMap();
+        PixelShader = compile PSMODEL ps_ShadowMap();
     }
 }
 
@@ -52,7 +52,7 @@ technique ShadowMapInstance
 {
     pass
     {
-        VertexShader = compile vs_4_0 vs_ShadowMapInstance();
-        PixelShader = compile ps_4_0 ps_ShadowMap();
+        VertexShader = compile VSMODEL vs_ShadowMapInstance();
+        PixelShader = compile PSMODEL ps_ShadowMap();
     }
 }

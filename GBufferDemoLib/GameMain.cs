@@ -3,6 +3,8 @@ using GBufferDemoLib.GBuffers;
 using GBufferDemoLib.GBuffers.Effects;
 using GBufferDemoLib.Geometry;
 using GBufferDemoLib.Lights;
+using GBufferDemoLib.Scenes;
+using GBufferDemoLib.Scenes.Village;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
@@ -17,24 +19,12 @@ namespace GBufferDemoLib
     {
         private GraphicsDeviceManager _graphics;
         private GBuffer gbuffer;
-        private BasicEffect basicEffect;
-        private SimpleGeometry icosahedron;
-        private Model sphere;
-        private Model ship;
-        private Model shipTexture;
-        private Texture2D surface;
-        private Texture2D surfaceNormalMap;
-        private Texture2D surfaceSpecularMap;
-        private Texture2D white;
         private Sky sky;
-        private List<PointLight> lights = new List<PointLight>();
-        private Player player = new Player();
+        private List<IScene> scenes = new List<IScene>();
+        private IScene scene;
 
-        private bool rebuild = false;
-        private int technique = 2;
-        private float updateStep = 0.05f;
-
-        public bool OpenGL { get; set; }
+        private float sunPos = MathHelper.PiOver4;
+        private bool moveSun;
 
         public GameMain()
         {
@@ -52,8 +42,6 @@ namespace GBufferDemoLib
             this._graphics.SynchronizeWithVerticalRetrace = false;
             this._graphics.ApplyChanges();
 
-            basicEffect = new BasicEffect(GraphicsDevice);
-
             this.Window.AllowUserResizing = true;
             this.Window.AllowAltF4 = true;
 
@@ -61,219 +49,85 @@ namespace GBufferDemoLib
                                   new ContentManager(Content.ServiceProvider, Content.RootDirectory + "/gbuffer"),
                                   new GBufferInitParams());
 
+            scenes.Add(new VillageScene(GraphicsDevice, Content));
+            scenes.Add(new IcoScene(GraphicsDevice, Content));
+            scene = scenes[0];
+
             LoadContent();
 
             Window.ClientSizeChanged += (sender, e) => gbuffer.RebuildTargets();
-
-            InitLights();
-
-            icosahedronInstances = new InstanceDisplay(GraphicsDevice);
-
-            farPlane = 9000;
-
-            camera = new PerspectiveCamera(MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, farPlane);
         }
 
         protected override void LoadContent()
         {
-            InitIcosahedron();
-
-            surface = Content.Load<Texture2D>("surface");
-            surfaceNormalMap = Content.Load<Texture2D>("surface-normalmap");
-            surfaceSpecularMap = Content.Load<Texture2D>("surface-specularmap");
-            white = Content.Load<Texture2D>("white");
             sky = new Sky(GraphicsDevice, Content);
-            sphere = Content.Load<Model>("highdefsphere");
-            ship = Content.Load<Model>("ship_light");
 
             sky.Effect = gbuffer.BackgroundEffect;
         }
-
-        private void InitIcosahedron()
-        {
-            var icosahedronBuilder = new IcosahedronBuilder();
-            var geometry = new BumpMappedGeometryBuilder();
-            icosahedronBuilder.BuildGeometry(geometry);
-
-            icosahedron = geometry.CreateSimpleGeometry(GraphicsDevice);
-        }
-
-        private Vector3 rot;
-        private int farPlane;
-        private PerspectiveCamera camera;
-        private KeyboardState lastKeyboard;
-        private int latticeSize = 5;
-        private bool paused;
-        private bool drawInstanced = true;
-        private InstanceDisplay icosahedronInstances;
 
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
+            Kbrd.Update();
+
             base.Update(gameTime);
 
-            player.Update(gameTime, GamePad.GetState(PlayerIndex.One));
+            scene.Update(gameTime);
 
-            if (!paused)
+            if (Kbrd.KeyReleased(Keys.Enter))
             {
-                rot += updateStep * new Vector3(1, 0.82f, 0.71f) * (float)gameTime.ElapsedGameTime.TotalSeconds;
-            }
-            else
-            {
-                rot.Z += updateStep * 0.71f * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                sunPos = 0;
+                moveSun = !moveSun;
             }
 
-            KeyboardState keyboard = Keyboard.GetState();
-
-            if (KeyReleased(ref keyboard, Keys.Space))
+            if (Kbrd.IsKeyDown(Keys.LeftShift))
             {
-                rebuild = true;
-            }
-            if (KeyReleased(ref keyboard, Keys.D1))
-            {
-                technique = 0;
-            }
-            if (KeyReleased(ref keyboard, Keys.D2))
-            {
-                technique = 1;
-            }
-            if (KeyReleased(ref keyboard, Keys.D3))
-            {
-                technique = 2;
-            }
-            if (KeyReleased(ref keyboard, Keys.OemPlus))
-            {
-                latticeSize++;
-                rebuild = true;
-            }
-            if (KeyReleased(ref keyboard, Keys.Pause))
-            {
-                paused = !paused;
-            }
-            if (KeyReleased(ref keyboard, Keys.PageUp))
-            {
-                updateStep *= 2;
-            }
-            if (KeyReleased(ref keyboard, Keys.PageDown))
-            {
-                updateStep /= 2;
-            }
-            if (KeyReleased(ref keyboard, Keys.OemMinus))
-            {
-                latticeSize = Math.Max(0, latticeSize - 1);
-                rebuild = true;
-            }
-            if (KeyReleased(ref keyboard, Keys.Q))
-            {
-                drawInstanced = false;
-            }
-            if (KeyReleased(ref keyboard, Keys.W))
-            {
-                drawInstanced = true;
-            }
-            if (KeyReleased(ref keyboard, Keys.A))
-            {
-                sky.Sun.Light.EnableShadows = false;
-            }
-            if (KeyReleased(ref keyboard, Keys.S))
-            {
-                sky.Sun.Light.EnableShadows = true;
+                if (Kbrd.KeyReleased(Keys.D1))
+                {
+                    scene = scenes[0];
+                }
+                else if (Kbrd.KeyReleased(Keys.D2))
+                {
+                    scene = scenes[1];
+                }
             }
 
-            lastKeyboard = keyboard;
-        }
-
-        private bool KeyReleased(ref KeyboardState keyboard, Keys key)
-        {
-            return (lastKeyboard.IsKeyDown(key) && !keyboard.IsKeyDown(key));
+            if (moveSun)
+            {
+                sunPos += 0.04f * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            var graphics = GraphicsDevice;
-
-            graphics.Clear(Color.DarkSlateGray);
-
             if (gbuffer.FillEffect == null)
                 return;
 
-            if (rebuild)
-            {
-                icosahedron.Dispose();
-                InitIcosahedron();
-
-                InitLights();
-
-                rebuild = false;
-            }
-
-            camera.SetLookAt(player.Position, player.Position + player.Facing, player.Up);
-
-            InitLights();
-
-            // Useful for debugging.
-            //BasicEffectDraw(graphics);
-
-
-            GBufferDraw(graphics, gameTime);
+            GBufferDraw(GraphicsDevice, gameTime);
 
             base.Draw(gameTime);
-        }
-
-        private void InitLights()
-        {
-            Random r = new Random(239847);
-
-            lights.Clear();
-
-            foreach (Vector3 pt in LatticePoints(Math.Min(latticeSize, 10)))
-            {
-                Color clr = ColorFromHsv(r.Next(360), 1, 1);
-                float phi = 40 * rot.X + pt.X + 10 * (rot.Y + pt.Y);
-                float range = 4; // + (float)Math.Sin(rot.Z * 100 + pt.Z + pt.X) * 3;
-                float intensity = 0.05f;
-                Vector3 position = pt + 2f * new Vector3((float)Math.Cos(phi), (float)Math.Sin(phi), (float)Math.Cos(30 * rot.X * Math.Sin(pt.Z) + MathHelper.PiOver2));
-
-                if (pt == Vector3.Zero)
-                {
-                    range = 100;
-                    phi *= 0.2f;
-
-                    intensity = 0.3f;
-                    clr = Color.White;
-                    position = 100f * new Vector3((float)Math.Cos(phi), (float)Math.Sin(phi), 0);
-                }
-
-                lights.Add(new PointLight
-                {
-                    Color = clr,
-                    Range = range,
-                    Position = position,
-                    Intensity = intensity,
-                });
-            }
         }
 
         private void GBufferDraw(GraphicsDevice graphics, GameTime time)
         {
             UpdateSky();
 
-            gbuffer.Camera = camera;
+            gbuffer.Camera = scene.Camera;
             gbuffer.Gamma = 2.2f;
 
             gbuffer.Begin(time);
             gbuffer.Clear();
 
-            gbuffer.DrawGeometry(DrawScene);
-            gbuffer.ShadowMap(sky.Sun.Light, DrawScene);
+            gbuffer.DrawGeometry(scene.Draw);
+            gbuffer.ShadowMap(sky.Sun.Light, scene.Draw);
 
             LightingStep lighting = gbuffer.BeginLighting();
 
             lighting.AmbientAndEmissive(sky.Sun.AmbientDown, sky.Sun.AmbientUp);
             lighting.DirectionalLight(sky.Sun.Light);
-            lighting.ApplyLights(lights);
+            lighting.PointLights(scene.Lights);
 
             DrawSky(graphics);
 
@@ -282,256 +136,22 @@ namespace GBufferDemoLib
 
         private void UpdateSky()
         {
-            float angle = rot.X - 1f;
+            float angle = sunPos;
 
             sky.NightSkyRotation = angle * 0.1f;
             sky.Sun.DirectionTo = new Vector3(
                 (float)Math.Cos(angle),
-                1,
+                0.707f,
                 (float)Math.Sin(angle));
-        }
-
-        private void DrawScene(DrawStep drawStep)
-        {
-            drawStep.Effect.SpecularIntensity = 0;
-            drawStep.Effect.SpecularExponent = 0;
-
-            DrawLattice(drawStep);
-
-            if (!drawStep.ShadowCastersOnly)
-            {
-                DrawLights(drawStep);
-            }
-
-            DrawShip(drawStep);
-        }
-
-        private void DrawShip(DrawStep drawStep)
-        {
-            drawStep.Effect.SetTextures(surface);
-            drawStep.Effect.Emissive = 0;
-            drawStep.Effect.Color = Color.White.ToVector3();
-            drawStep.Effect.Instancing = false;
-
-            float phi = (-0.1f * rot.X) % MathHelper.TwoPi;
-            float heading = phi + MathHelper.Pi;
-
-            Vector3 position = 100 * new Vector3((float)Math.Cos(phi), (float)Math.Sin(phi), 0) + 10 * Vector3.UnitZ;
-
-            drawStep.Effect.PrepModel(ship);
-
-            Matrix world = Matrix.CreateRotationX(MathHelper.PiOver2) * Matrix.CreateRotationZ(heading) * Matrix.CreateTranslation(position);
-
-            ship.Draw(world,
-                      drawStep.Camera.View,
-                      drawStep.Camera.Projection);
-        }
-
-        private void DrawLights(DrawStep drawStep)
-        {
-            drawStep.Effect.SetTextures(white);
-            drawStep.Effect.Instancing = false;
-            drawStep.Effect.PrepModel(sphere);
-
-            for (int i = 0; i < lights.Count; i++)
-            {
-                PointLight light = lights[i];
-
-                drawStep.Effect.Color = light.Color.ToVector3() * 2f;
-                drawStep.Effect.World = Matrix.CreateScale(0.1f) *
-                                        Matrix.CreateTranslation(light.Position);
-
-                drawStep.Effect.Emissive = 1f;
-
-                if (i == 0)
-                {
-                    drawStep.Effect.World = Matrix.CreateTranslation(light.Position);
-                }
-
-                foreach (var mesh in sphere.Meshes)
-                {
-                    mesh.Draw();
-                }
-            }
-        }
-
-        private void DrawLattice(DrawStep drawStep)
-        {
-            var graphics = drawStep.GraphicsDevice;
-
-            drawStep.Effect.Color = Color.White.ToVector3();
-            drawStep.Effect.SpecularExponent = 100;
-            drawStep.Effect.SpecularIntensity = 0.9f;
-
-            switch (technique)
-            {
-                case 2:
-                    drawStep.Effect.SetTextures(surface, surfaceNormalMap, surfaceSpecularMap);
-                    break;
-                case 1:
-                    drawStep.Effect.SetTextures(surface, surfaceNormalMap);
-                    break;
-                case 0:
-                default:
-                    drawStep.Effect.SetTextures(surface);
-                    break;
-            }
-
-            graphics.SamplerStates[0] = SamplerState.AnisotropicClamp;
-            graphics.SamplerStates[1] = SamplerState.AnisotropicClamp;
-            graphics.SamplerStates[2] = SamplerState.AnisotropicClamp;
-
-            icosahedronInstances.Instances.Clear();
-
-            foreach (Vector3 pt in LatticePoints(latticeSize))
-            {
-                var world = Matrix.CreateRotationX(rot.X * pt.X + pt.X) *
-                            Matrix.CreateRotationY(rot.Y * pt.Y + pt.Y) *
-                            Matrix.CreateRotationZ(rot.Z * pt.Z + pt.Z) *
-                            Matrix.CreateTranslation(pt);
-
-                if (pt == Vector3.Zero)
-                {
-                    Vector3 disp = new Vector3(0, 0, -3);
-                    float scale = 400;
-                    float dispScale = 0.515f;
-
-                    Vector3 axis = new Vector3(-1, 1, 0);
-                    axis.Normalize();
-                    var q = Quaternion.CreateFromAxisAngle(axis, MathHelper.PiOver2 * 1.4f + MathHelper.Pi);
-
-                    world = Matrix.CreateFromQuaternion(q) * Matrix.CreateScale(scale) * Matrix.CreateTranslation(disp * scale * dispScale);
-                }
-
-                icosahedronInstances.Instances.Add(world);
-
-                if (!drawInstanced)
-                {
-                    drawStep.Effect.World = world;
-                    drawStep.Effect.Instancing = false;
-
-                    foreach (var pass in drawStep.Effect.CurrentTechnique.Passes)
-                    {
-                        pass.Apply();
-
-                        graphics.Textures[0] = surface;
-                        graphics.SetVertexBuffer(icosahedron.Vertices);
-                        graphics.DrawPrimitives(PrimitiveType.TriangleList, 0, icosahedron.Vertices.VertexCount / 3);
-                    }
-                }
-            }
-
-            if (drawInstanced)
-            {
-                drawStep.Effect.World = Matrix.Identity;
-                drawStep.Effect.Instancing = true;
-
-                icosahedronInstances.Draw(drawStep.Effect.AsEffect(), icosahedron);
-            }
         }
 
         private void DrawSky(GraphicsDevice graphics)
         {
             graphics.DepthStencilState = DepthStencilState.None;
 
-            sky.Draw(player.Position, farPlane);
+            sky.Draw(scene.Player.Position, scene.Camera.FarZ);
 
             graphics.DepthStencilState = DepthStencilState.Default;
         }
-
-        private IEnumerable<Vector3> LatticePoints(int distance = 10)
-        {
-            for (int k = 0; k <= distance; k++)
-            {
-                for (int j = 0; j <= distance; j++)
-                {
-                    for (int i = 0; i <= distance; i++)
-                    {
-                        yield return 10 * new Vector3(i, j, k);
-                    }
-                }
-            }
-        }
-
-        private void BasicEffectDraw(GraphicsDevice graphics)
-        {
-            graphics.BlendState = BlendState.Opaque;
-            graphics.DepthStencilState = DepthStencilState.Default;
-
-            graphics.Clear(Color.Blue);
-
-            basicEffect.View = camera.View;
-            basicEffect.Projection = camera.Projection;
-            basicEffect.TextureEnabled = true;
-            basicEffect.LightingEnabled = false;
-
-            basicEffect.Texture = surface;
-
-            foreach (Vector3 pt in LatticePoints(1))
-            {
-                basicEffect.World = Matrix.Identity *
-                                 // Matrix.CreateRotationX(rot.X * pt.X + pt.X) *
-                                 // Matrix.CreateRotationY(rot.Y * pt.Y + pt.Y) *
-                                 // Matrix.CreateRotationZ(rot.Z * pt.Z + pt.Z) *
-                                 Matrix.CreateTranslation(pt.X + 4 * (float)Math.Sin(rot.X * 30 + pt.X),
-                                                          pt.Y + 4 * (float)Math.Cos(rot.X * 30 + pt.Y), pt.Z) *
-                                //Matrix.CreateRotationX(rot.X) *
-                                //Matrix.CreateRotationY(rot.Y) *
-                                //Matrix.CreateRotationZ(rot.Z) *
-                                Matrix.Identity;
-
-                foreach (var pass in basicEffect.CurrentTechnique.Passes)
-                {
-                    pass.Apply();
-
-                    graphics.Textures[0] = surface;
-                    graphics.SetVertexBuffer(icosahedron.Vertices);
-                    graphics.DrawPrimitives(PrimitiveType.TriangleList, 0, icosahedron.Vertices.VertexCount / 3);
-                }
-            }
-        }
-
-
-        /// <summary>
-        /// Returns a Color object calculated from hue, saturation and value.
-        /// See algorithm at http://en.wikipedia.org/wiki/HSL_and_HSV#From_HSV
-        /// </summary>
-        /// <param name="hue">The hue angle in degrees.</param>
-        /// <param name="saturation">A value from 0 to 1 representing saturation.</param>
-        /// <param name="value">A value from 0 to 1 representing the value.</param>
-        /// <returns></returns>
-        public static Color ColorFromHsv(double hue, double saturation, double value)
-        {
-            while (hue < 0)
-            {
-                hue += 360;
-            }
-
-            if (hue >= 360)
-            {
-                hue = hue % 360;
-            }
-
-            double hp = hue / 60;
-            double chroma = value * saturation;
-            double x = chroma * (1 - Math.Abs(hp % 2 - 1));
-
-            double r1 = 0, b1 = 0, g1 = 0;
-
-            switch ((int)hp)
-            {
-                case 0: r1 = chroma; g1 = x; break;
-                case 1: r1 = x; g1 = chroma; break;
-                case 2: g1 = chroma; b1 = x; break;
-                case 3: g1 = x; b1 = chroma; break;
-                case 4: r1 = x; b1 = chroma; break;
-                case 5: r1 = chroma; b1 = x; break;
-            }
-
-            double m = value - chroma;
-
-            return new Color((int)(255 * (r1 + m)), (int)(255 * (g1 + m)), (int)(255 * (b1 + m)));
-        }
-
     }
 }

@@ -8,7 +8,7 @@ namespace GBufferDemoLib.Shadows
     public class ShadowSettings
     {
         public FixedFilterSize FixedFilterSize = FixedFilterSize.Filter2x2;
-        public bool VisualizeCascades = true;
+        public bool VisualizeCascades = false;
         public bool StabilizeCascades = true;
         public bool FilterAcrossCascades;
         public float SplitDistance0;
@@ -26,12 +26,15 @@ namespace GBufferDemoLib.Shadows
         public ShadowSettings()
         {
             Bias = 0.002f;
-            OffsetScale = 0.0f;
+            OffsetScale = 0.1f;
 
-            SplitDistance0 = 0.05f;
-            SplitDistance1 = 0.15f;
+            SplitDistance0 = 0.12f;
+            SplitDistance1 = 0.25f;
             SplitDistance2 = 0.50f;
             SplitDistance3 = 1.0f;
+
+            FixedFilterSize = FixedFilterSize.Filter7x7;
+            FilterAcrossCascades = true;
         }
     }
 
