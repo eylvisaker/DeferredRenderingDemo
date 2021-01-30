@@ -1,19 +1,12 @@
-#if HLSL
-#define VSMODEL vs_5_0
-#define PSMODEL ps_5_0
-#else
-#define VSMODEL vs_3_0
-#define PSMODEL ps_3_0
-#endif
 
 float Gamma;
 
 float4x4 ViewProjectionInv;
 
-texture ColorTexture;
-texture DepthTexture;
-texture NormalTexture;
-texture SpecularTexture;
+Texture2D ColorTexture;
+Texture2D DepthTexture;
+Texture2D NormalTexture;
+Texture2D SpecularTexture;
 
 sampler ColorSampler = sampler_state
 {
@@ -65,12 +58,14 @@ static const float2 g_SpecExpRange = { 0.1, 16384.1 };
 struct Surface
 {
     float depth;
+    float depthVS;
     float3 color;
     float alpha;
     float emissive;
     float3 normal;
     float specInt;
     float specPow;
+    float3 worldPos;
 };
 
 struct Material
@@ -86,10 +81,10 @@ Surface unpackGBuffer(float2 texCoords)
 {
     Surface result;
     
-    float4 color = tex2D(ColorSampler, texCoords);
-    float depth = 1 - tex2D(DepthSampler, texCoords).x;
-    float3 normal = tex2D(NormalSampler, texCoords).xyz;
-    float2 specular = tex2D(SpecularSampler, texCoords).xy;
+    float4 color = ColorTexture.Sample(ColorSampler, texCoords);
+    float depth = 1 - DepthTexture.Sample(DepthSampler, texCoords).x;
+    float3 normal = NormalTexture.Sample(NormalSampler, texCoords).xyz;
+    float2 specular = SpecularTexture.Sample(SpecularSampler, texCoords).xy;
     
     // Unpack the emissive value, so that the lowest fifty values
     // exist on a fine-grain scale but everything above that is coarser 
@@ -110,6 +105,18 @@ Surface unpackGBuffer(float2 texCoords)
     result.normal = normal * 2 - 1;
     result.specPow = specular.x;
     result.specInt = specular.y;
+    
+    float4 position;
+    
+    position.x = texCoords.x * 2 - 1;
+    position.y = -(texCoords.y * 2 - 1);
+    position.z = depth;
+    position.w = 1.0;
+    
+    float4 worldPos = mul(position, ViewProjectionInv);
+    
+    result.depthVS = 1 / worldPos.w;
+    result.worldPos = (worldPos / worldPos.w).xyz;
     
     return result;
 }

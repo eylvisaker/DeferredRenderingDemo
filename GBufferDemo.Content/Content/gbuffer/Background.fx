@@ -8,7 +8,7 @@
 
 #include "unpackGBuffer.hlsl"
 
-texture BackgroundTexture;
+Texture2D BackgroundTexture;
 
 float4x4 WorldViewProjection;
 float4 Color;
@@ -62,7 +62,7 @@ Background_PixelShaderInput vs_Background(Background_VertexShaderInput input)
 ////  Pixel Shaders
 //////////////////////////////////////////////////////////////////////
 
-float4 ps_Background(Background_PixelShaderInput input) : COLOR
+float4 ps_Background(Background_PixelShaderInput input) : SV_Target
 {
     float2 screenPos = input.ScreenPosition.xy / input.ScreenPosition.ww;
     float2 texCoord = 0.5 * (float2(screenPos.x, -screenPos.y) + 1);
@@ -73,7 +73,7 @@ float4 ps_Background(Background_PixelShaderInput input) : COLOR
     if (surface.depth < 1)
         discard;
 
-    float4 color = tex2D(BackgroundSampler, input.TexCoords);
+    float4 color = BackgroundTexture.Sample(BackgroundSampler, input.TexCoords);
     float3 linearColor = pow(color.rgb, Gamma);
     
     return float4(linearColor * Color.rgb, saturate(color.a) * Color.a);

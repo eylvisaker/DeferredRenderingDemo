@@ -2,8 +2,8 @@
 #define VSMODEL vs_5_0
 #define PSMODEL ps_5_0
 #else
-#define VSMODEL vs_3_0
-#define PSMODEL ps_3_0
+#define VSMODEL vs_4_0
+#define PSMODEL ps_4_0
 #endif
 
 // Pixel shader filters the input texture so that only the really bright pixels are brought through.
@@ -13,16 +13,16 @@
 
 float BloomMinThreshold;
 
-texture ColorTexture;
+Texture2D ColorTexture;
 
 sampler ColorSampler = sampler_state
 {
     Texture = <ColorTexture>;
 };
 
-float4 ps_BloomFilter(FullScreen_PixelShaderInput input) : COLOR0
+float4 ps_BloomFilter(FullScreen_PixelShaderInput input) : SV_TARGET0
 {
-    float3 baseColor = tex2D(ColorSampler, input.TexCoords).xyz;
+    float3 baseColor = ColorTexture.Sample(ColorSampler, input.TexCoords).xyz;
     float avgLum = avgLuminance(input.TexCoords);
     
     float threshold = avgLum * 3 + BloomMinThreshold;

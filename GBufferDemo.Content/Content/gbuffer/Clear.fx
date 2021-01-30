@@ -21,10 +21,10 @@ struct PSIN
 
 struct PSOUT_GBuffer
 {
-    float4 Color : COLOR0;
-    float4 Depth : COLOR1;
-    float4 Normal : COLOR2;
-    float4 Spec : COLOR3;
+    float4 Color : SV_Target0;
+    float4 Depth : SV_Target1;
+    float4 Normal : SV_Target2;
+    float4 Spec : SV_Target3;
 };
 
 //////////////////////////////////////////////////////////////////////

@@ -1,10 +1,5 @@
-﻿#if HLSL
-#define VSMODEL vs_5_0
+﻿#define VSMODEL vs_5_0
 #define PSMODEL ps_5_0
-#else
-#define VSMODEL vs_3_0
-#define PSMODEL ps_3_0
-#endif
 
 matrix WorldViewProjection;
 
@@ -14,7 +9,7 @@ struct VSOutput
     float2 depth : TEXCOORD0;
 };
 
-VSOutput vs_ShadowMap(float3 position : SV_Position)
+VSOutput vs_ShadowMap(float3 position : POSITION)
 {
     VSOutput output;
     output.position = mul(float4(position, 1), WorldViewProjection);
@@ -22,7 +17,7 @@ VSOutput vs_ShadowMap(float3 position : SV_Position)
     return output;
 }
 
-VSOutput vs_ShadowMapInstance(float4 position : SV_Position, float4x4 instanceTransform : BLENDWEIGHT0)
+VSOutput vs_ShadowMapInstance(float4 position : POSITION, float4x4 instanceTransform : BLENDWEIGHT0)
 {
     VSOutput output;
     
@@ -34,7 +29,7 @@ VSOutput vs_ShadowMapInstance(float4 position : SV_Position, float4x4 instanceTr
     return output;
 }
 
-float4 ps_ShadowMap(VSOutput input) : COLOR
+float4 ps_ShadowMap(VSOutput input) : SV_Target
 {
     return float4(input.depth.x / input.depth.y, 0, 0, 1);
 }

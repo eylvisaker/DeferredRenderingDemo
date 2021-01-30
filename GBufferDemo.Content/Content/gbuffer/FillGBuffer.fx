@@ -2,8 +2,8 @@
 #define VSMODEL vs_5_0
 #define PSMODEL ps_5_0
 #else
-#define VSMODEL vs_3_0
-#define PSMODEL ps_3_0
+#define VSMODEL vs_4_0
+#define PSMODEL ps_4_0
 #endif
 
 float4x4 WorldViewProjection;
@@ -22,9 +22,9 @@ float PreserveColorAngle;
 ////////////////////////////////
 // Texture/Material Parameters
 ////////////////////////////////
-texture DiffuseTexture;
-texture NormalMapTexture;
-texture SpecularMapTexture;
+Texture2D DiffuseTexture;
+Texture2D NormalMapTexture;
+Texture2D SpecularMapTexture;
 
 float Emissive;
 float SpecularExponent;
@@ -45,9 +45,9 @@ struct VertexShaderInput_Bumped
 {
     float4 Position : POSITION0;
     float2 TexCoords : TEXCOORD0;
-    float3 Normal : NORMAL;
-    float3 Tangent0 : TANGENT0;
-    float3 Tangent1 : TANGENT1;
+    float3 Normal : NORMAL0;
+    float3 Tangent0 : BINORMAL0;
+    float3 Tangent1 : TANGENT0;
 };
 
 struct VertexShaderInput_Sprite
@@ -105,10 +105,10 @@ struct PSIN_Bumped
 
 struct PSOUT_GBuffer
 {
-    float4 Color : COLOR0;
-    float4 Depth : COLOR1;
-    float4 Normal : COLOR2;
-    float4 Spec : COLOR3;
+    float4 Color : SV_Target0;
+    float4 Depth : SV_Target1;
+    float4 Normal : SV_Target2;
+    float4 Spec : SV_Target3;
 };
 
 struct PSOUT_Color
@@ -306,7 +306,7 @@ static const float2 g_SpecExpRange = { 0.1, 16384.1 };
 
 float3 calcBumpNormal(float2 texCoords, float3 normal, float3 tangent0, float3 tangent1)
 {
-    float4 bump = tex2D(normalSampler, texCoords);
+    float4 bump = NormalMapTexture.Sample(normalSampler, texCoords);
     bump = (bump * 2) - 1;
     
     float3 bumpNormal = bump.x * tangent0 
@@ -333,7 +333,7 @@ PSOUT_GBuffer packGBuffer(float4 color, float3 normal, float2 depth, float specI
 
 PSOUT_GBuffer ps_Sprite(PSIN_Textured input)
 {
-    float4 texel = tex2D(diffuseSampler, input.TexCoords);
+    float4 texel = DiffuseTexture.Sample(diffuseSampler, input.TexCoords);
 
     if (texel.a < 0.1)
         discard;
@@ -362,7 +362,7 @@ PSOUT_GBuffer ps_Textured(PSIN_Textured input)
 
 PSOUT_GBuffer ps_Bumped(PSIN_Bumped input)
 {
-    float4 texel = tex2D(diffuseSampler, input.TexCoords);
+    float4 texel = DiffuseTexture.Sample(diffuseSampler, input.TexCoords);
 
     if (texel.a < 0.1)
         discard;
@@ -382,7 +382,7 @@ PSOUT_GBuffer ps_Bumped(PSIN_Bumped input)
 
 PSOUT_GBuffer ps_Speculared(PSIN_Bumped input)
 {
-    float4 texel = tex2D(diffuseSampler, input.TexCoords);
+    float4 texel = DiffuseTexture.Sample(diffuseSampler, input.TexCoords);
 
     if (texel.a < 0.1)
         discard;
@@ -394,7 +394,7 @@ PSOUT_GBuffer ps_Speculared(PSIN_Bumped input)
     
     float3 bumpNormal = calcBumpNormal(input.TexCoords, input.Normal, input.Tangent0, input.Tangent1);
     
-    float4 spec = tex2D(specularSampler, input.TexCoords);
+    float4 spec = SpecularMapTexture.Sample(specularSampler, input.TexCoords);
     
     return packGBuffer(input.Color * texel,
                        bumpNormal,

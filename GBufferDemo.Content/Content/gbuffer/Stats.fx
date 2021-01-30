@@ -8,8 +8,8 @@
 
 #include "fullscreen.hlsl"
 
-texture A_Texture;
-texture B_Texture;
+Texture2D A_Texture;
+Texture2D B_Texture;
 float4 A_Weight;
 float4 B_Weight;
 float2 HalfTexel;
@@ -58,10 +58,10 @@ FullScreen_PixelShaderInput vs_FullScreenTexelOffset(FullScreen_VertexShaderInpu
 ////  Pixel Shaders
 //////////////////////////////////////////////////////////////////////
 
-float4 ps_average(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_average(FullScreen_PixelShaderInput input) : SV_Target
 {
-    float4 a = tex2D(A_Sampler, input.TexCoords);
-    float4 b = tex2D(B_Sampler, input.TexCoords);
+    float4 a = A_Texture.Sample(A_Sampler, input.TexCoords);
+    float4 b = B_Texture.Sample(B_Sampler, input.TexCoords);
 
     return A_Weight * a + B_Weight * b;
 }

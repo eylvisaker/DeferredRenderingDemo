@@ -1,0 +1,4 @@
+[submodule "MonoGame"]
+	path = MonoGame
+	url = git@github.com:eylvisaker/MonoGame.git
+	branch = hulldomain-texturearrays

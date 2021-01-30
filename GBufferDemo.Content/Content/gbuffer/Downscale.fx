@@ -8,7 +8,7 @@
 
 #include "fullscreen.hlsl"
 
-texture ColorTexture;
+Texture2D ColorTexture;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -27,9 +27,9 @@ sampler ColorSampler = sampler_state
 ////  Pixel Shaders
 //////////////////////////////////////////////////////////////////////
 
-float4 ps_Final(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_Final(FullScreen_PixelShaderInput input) : SV_Target
 {
-    float4 result = tex2D(ColorSampler, input.TexCoords);
+    float4 result = ColorTexture.Sample(ColorSampler, input.TexCoords);
     
     return result;
 }

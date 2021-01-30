@@ -12,7 +12,7 @@
 
 #include "fullscreen.hlsl"
 
-texture ColorTexture;
+Texture2D ColorTexture;
 
 #define SAMPLE_COUNT 15
 
@@ -26,14 +26,14 @@ sampler TextureSampler = sampler_state
 };
 
 
-float4 ps_GaussianBlur(FullScreen_PixelShaderInput input) : COLOR0
+float4 ps_GaussianBlur(FullScreen_PixelShaderInput input) : SV_Target
 {
     float4 c = 0;
 
     // Combine a number of weighted image filter taps.
     for (int i = 0; i < SAMPLE_COUNT; i++)
     {
-        c += tex2D(TextureSampler, input.TexCoords + SampleOffsets[i]) * SampleWeights[i];
+        c += ColorTexture.Sample(TextureSampler, input.TexCoords + SampleOffsets[i]) * SampleWeights[i];
     }
 
     return c;

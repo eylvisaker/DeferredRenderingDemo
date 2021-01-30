@@ -2,204 +2,14 @@
 #define VSMODEL vs_5_0
 #define PSMODEL ps_5_0
 #else
-#define VSMODEL vs_3_0
-#define PSMODEL ps_3_0
+#define VSMODEL vs_4_0
+#define PSMODEL ps_4_0
 #endif
 
-// #include "unpackGBuffer.hlsl"
-
-#if HLSL
-#define VSMODEL vs_5_0
-#define PSMODEL ps_5_0
-#else
-#define VSMODEL vs_3_0
-#define PSMODEL ps_3_0
-#endif
-
-float Gamma;
-
-float4x4 ViewProjectionInv;
-
-texture ColorTexture;
-texture DepthTexture;
-texture NormalTexture;
-texture SpecularTexture;
 float2 shadowMapSize;
 
-sampler ColorSampler = sampler_state
-{
-    Texture = <ColorTexture>;
-    AddressU = CLAMP;
-    AddressV = CLAMP;
-    MagFilter = LINEAR;
-    MinFilter = LINEAR;
-    Mipfilter = LINEAR;
-};
-
-sampler DepthSampler = sampler_state
-{
-    Texture = <DepthTexture>;
-    AddressU = CLAMP;
-    AddressV = CLAMP;
-    MagFilter = POINT;
-    MinFilter = POINT;
-    Mipfilter = POINT;
-};
-
-sampler NormalSampler = sampler_state
-{
-    Texture = <NormalTexture>;
-    AddressU = CLAMP;
-    AddressV = CLAMP;
-    MagFilter = POINT;
-    MinFilter = POINT;
-    Mipfilter = POINT;
-};
-
-sampler SpecularSampler = sampler_state
-{
-    Texture = <SpecularTexture>;
-    AddressU = CLAMP;
-    AddressV = CLAMP;
-    MagFilter = POINT;
-    MinFilter = POINT;
-    Mipfilter = POINT;
-};
-
-//////////////////////////////////////////////////////////////////////
-////  Reading the GBuffer
-//////////////////////////////////////////////////////////////////////
-
-// This must match the same named constants in FillGBuffer.fx
-static const float2 g_SpecExpRange = { 0.1, 16384.1 };
-
-struct Surface
-{
-    float depth;
-    float depthVS;
-    float3 worldPos;
-    float3 color;
-    float alpha;
-    float emissive;
-    float3 normal;
-    float specInt;
-    float specPow;
-};
-
-struct Material
-{
-    float3 normal;
-    float4 diffuseColor;
-    float emissive;
-    float specExp;
-    float specIntensity;
-};
-
-Surface unpackGBuffer(float2 texCoords)
-{
-    Surface result;
-    
-    float4 color = tex2D(ColorSampler, texCoords);
-    float depth = 1 - tex2D(DepthSampler, texCoords).x;
-    float3 normal = tex2D(NormalSampler, texCoords).xyz;
-    float2 specular = tex2D(SpecularSampler, texCoords).xy;
-    
-    // Unpack the emissive value, so that the lowest fifty values
-    // exist on a fine-grain scale but everything above that is coarser 
-    // grain, up to an emissive value of 2 at color.a = 1.
-    // First scale emissive to integer values from 0-255 (byte storage);
-    float emissive = color.a * 255;
-    
-    // Next scale emissive to 0-1000
-    emissive += saturate(emissive - 50) * 4.634;
-    
-    // Now scale emissive to actual HDR range we want to use. 
-    // 0.005 puts it from the range of 0-5
-    emissive *= 0.002;
-    
-    result.color = pow(color.xyz, Gamma);
-    result.emissive = emissive;
-    result.depth = depth;
-    result.normal = normal * 2 - 1;
-    result.specPow = specular.x;
-    result.specInt = specular.y;
-    
-    float4 position;
-    
-    position.x = texCoords.x * 2 - 1;
-    position.y = -(texCoords.y * 2 - 1);
-    position.z = depth;
-    position.w = 1.0;
-    
-    float4 worldPos = mul(position, ViewProjectionInv);
-    
-    result.depthVS = 1 / worldPos.w;
-    result.worldPos = (worldPos / worldPos.w).xyz;
-    
-    return result;
-}
-
-Material createMaterial(Surface surface)
-{
-    Material mat;
-    
-    mat.normal = surface.normal;
-    mat.diffuseColor = float4(surface.color.xyz, 1);
-    mat.specExp = g_SpecExpRange.x + g_SpecExpRange.y * surface.specPow;
-    mat.specIntensity = surface.specInt;
-    mat.emissive = surface.emissive;
-    
-    return mat;
-}
-
-
-
-// #include "fullscreen.hlsl"
-
-
-
-
-
-float2 TexelOffset;
-
-//////////////////////////////////////////////////////////////////////
-
-struct FullScreen_VertexShaderInput
-{
-    float4 Position : POSITION;
-};
-
-struct FullScreen_PixelShaderInput
-{
-    float4 Position : SV_POSITION;
-    float2 TexCoords : TEXCOORD0;
-};
-
-
-
-//////////////////////////////////////////////////////////////////////
-////  Standard Vertex Shader
-//////////////////////////////////////////////////////////////////////
-
-FullScreen_PixelShaderInput vs_FullScreen(FullScreen_VertexShaderInput input)
-{
-    FullScreen_PixelShaderInput output;
-    
-    output.Position = input.Position;
-    output.TexCoords.x = (1 + input.Position.x) / 2;
-    output.TexCoords.y = (1 - input.Position.y) / 2;
-
-    output.TexCoords += TexelOffset;
-    
-    return output;
-}
-
-struct Point_VertexShaderInput
-{
-    float3 Position : POSITION;
-};
-
-
+#include "unpackGBuffer.hlsl"
+#include "fullscreen.hlsl"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -225,63 +35,16 @@ float OffsetScale;
 
 // Resources.
 
-Texture2D ShadowMap0 : register(t4);
-Texture2D ShadowMap1 : register(t5);
-Texture2D ShadowMap2 : register(t6);
-Texture2D ShadowMap3 : register(t7);
+Texture2DArray ShadowMaps : register(t4);
 
-SamplerComparisonState ShadowSampler0 : register(s4);
-SamplerComparisonState ShadowSampler1 : register(s5);
-SamplerComparisonState ShadowSampler2 : register(s6);
-SamplerComparisonState ShadowSampler3 : register(s7);
-sampler shadowSampler;
+SamplerComparisonState ShadowSampler : register(s4);
+
+
+
 
 float ShadowMapSampleCmpLevelZero(float2 uv, uint cascadeIdx, float z)
 { 
-#if HLSL
-    
-    if (cascadeIdx == 0)
-    {
-        return ShadowMap0.SampleCmpLevelZero(ShadowSampler0, uv, z);
-    }
-    else if (cascadeIdx == 1)
-    {
-        return ShadowMap1.SampleCmpLevelZero(ShadowSampler1, uv, z);
-    }
-    else if (cascadeIdx == 2)
-    {
-        return ShadowMap2.SampleCmpLevelZero(ShadowSampler2, uv, z);
-    }
-    else
-    {
-        return ShadowMap3.SampleCmpLevelZero(ShadowSampler3, uv, z);
-    }
-
-#else
-        
-    float r;
-    
-    if (cascadeIdx == 0)
-    {
-        r = ShadowMap0.Sample(shadowSampler, uv).r;
-    }
-    else if (cascadeIdx == 1)
-    {
-        r = ShadowMap1.Sample(shadowSampler, uv).r;
-    }
-    else if (cascadeIdx == 2)
-    {
-        r = ShadowMap2.Sample(shadowSampler, uv).r;
-    }
-    else if (cascadeIdx == 1)
-    {
-        r = ShadowMap3.Sample(shadowSampler, uv).r;
-    }
-    
-    return r > z;
-    
-#endif
-    
+    return ShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(uv, cascadeIdx), z);
 }
 
 // Pixel shader.
@@ -576,82 +339,82 @@ float4 ps_DirectionShadow(FullScreen_PixelShaderInput input,
 
 
 
-float4 ps_VisualizeFalseFilterFalseFilterSizeFilter2x2(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeFalseFilterFalseFilterSizeFilter2x2(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, false, false, 2);
 }
 
-float4 ps_VisualizeTrueFilterFalseFilterSizeFilter2x2(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeTrueFilterFalseFilterSizeFilter2x2(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, true, false, 2);
 }
 
-float4 ps_VisualizeFalseFilterFalseFilterSizeFilter3x3(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeFalseFilterFalseFilterSizeFilter3x3(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, false, false, 3);
 }
 
-float4 ps_VisualizeTrueFilterFalseFilterSizeFilter3x3(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeTrueFilterFalseFilterSizeFilter3x3(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, true, false, 3);
 }
 
-float4 ps_VisualizeFalseFilterFalseFilterSizeFilter5x5(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeFalseFilterFalseFilterSizeFilter5x5(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, false, false, 5);
 }
 
-float4 ps_VisualizeTrueFilterFalseFilterSizeFilter5x5(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeTrueFilterFalseFilterSizeFilter5x5(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, true, false, 5);
 }
 
-float4 ps_VisualizeFalseFilterFalseFilterSizeFilter7x7(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeFalseFilterFalseFilterSizeFilter7x7(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, false, false, 7);
 }
 
-float4 ps_VisualizeTrueFilterFalseFilterSizeFilter7x7(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeTrueFilterFalseFilterSizeFilter7x7(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, true, false, 7);
 }
 
-float4 ps_VisualizeFalseFilterTrueFilterSizeFilter2x2(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeFalseFilterTrueFilterSizeFilter2x2(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, false, true, 2);
 }
 
-float4 ps_VisualizeTrueFilterTrueFilterSizeFilter2x2(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeTrueFilterTrueFilterSizeFilter2x2(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, true, true, 2);
 }
 
-float4 ps_VisualizeFalseFilterTrueFilterSizeFilter3x3(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeFalseFilterTrueFilterSizeFilter3x3(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, false, true, 3);
 }
 
-float4 ps_VisualizeTrueFilterTrueFilterSizeFilter3x3(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeTrueFilterTrueFilterSizeFilter3x3(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, true, true, 3);
 }
 
-float4 ps_VisualizeFalseFilterTrueFilterSizeFilter5x5(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeFalseFilterTrueFilterSizeFilter5x5(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, false, true, 5);
 }
 
-float4 ps_VisualizeTrueFilterTrueFilterSizeFilter5x5(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeTrueFilterTrueFilterSizeFilter5x5(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, true, true, 5);
 }
 
-float4 ps_VisualizeFalseFilterTrueFilterSizeFilter7x7(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeFalseFilterTrueFilterSizeFilter7x7(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, false, true, 7);
 }
 
-float4 ps_VisualizeTrueFilterTrueFilterSizeFilter7x7(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_VisualizeTrueFilterTrueFilterSizeFilter7x7(FullScreen_PixelShaderInput input) : SV_Target
 {
     return ps_DirectionShadow(input, true, true, 7);
 }

@@ -8,8 +8,8 @@
 
 #include "averageLuminance.hlsl"
 
-texture ColorTexture;
-texture BloomTexture;
+Texture2D ColorTexture;
+Texture2D BloomTexture;
 
 float GammaReciprocal;
 
@@ -167,19 +167,19 @@ float3 calcBloom(float3 base, float3 bloom, float avgLum)
 }
 
 
-float4 ps_Final(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_Final(FullScreen_PixelShaderInput input) : SV_Target
 {
-    float3 hdrColor = tex2D(ColorSampler, input.TexCoords).xyz;
+    float3 hdrColor = ColorTexture.Sample(ColorSampler, input.TexCoords).xyz;
     float avgLum = avgLuminance(input.TexCoords);
         
     return toneMap(hdrColor, avgLum);
 }
 
-float4 ps_FinalBloom(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_FinalBloom(FullScreen_PixelShaderInput input) : SV_Target
 {
     // Look up the bloom and original base image colors.
-    float3 baseColor = tex2D(ColorSampler, input.TexCoords).xyz;
-    float3 bloomColor = tex2D(BloomSampler, input.TexCoords).xyz;
+    float3 baseColor = ColorTexture.Sample(ColorSampler, input.TexCoords).xyz;
+    float3 bloomColor = BloomTexture.Sample(BloomSampler, input.TexCoords).xyz;
     float avgLum = avgLuminance(input.TexCoords);
 
     float3 hdrColor = calcBloom(baseColor, bloomColor, avgLum);

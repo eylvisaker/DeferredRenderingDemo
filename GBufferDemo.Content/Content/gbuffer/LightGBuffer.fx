@@ -102,7 +102,7 @@ float3 calcPointLight(float3 position, Material material)
     return finalColor;
 }
 
-float4 ps_Ambient(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_Ambient(FullScreen_PixelShaderInput input) : SV_Target
 {
     Surface surface = unpackGBuffer(input.TexCoords);
     Material mat = createMaterial(surface);
@@ -115,7 +115,7 @@ float4 ps_Ambient(FullScreen_PixelShaderInput input) : COLOR
     return finalColor;
 }
 
-float4 ps_Direction(FullScreen_PixelShaderInput input) : COLOR
+float4 ps_Direction(FullScreen_PixelShaderInput input) : SV_Target
 {
     Surface surface = unpackGBuffer(input.TexCoords);
     Material mat = createMaterial(surface);
@@ -129,7 +129,7 @@ float4 ps_Direction(FullScreen_PixelShaderInput input) : COLOR
     return finalColor;
 }
 
-float4 ps_PointLight(Point_PixelShaderInput input) : COLOR
+float4 ps_PointLight(Point_PixelShaderInput input) : SV_Target
 {
     float2 screenPos = input.ScreenPosition.xy / input.ScreenPosition.ww;
     float2 texCoord = 0.5 * (float2(screenPos.x, -screenPos.y) + 1);
