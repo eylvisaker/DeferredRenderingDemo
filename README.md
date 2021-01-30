@@ -20,8 +20,10 @@ Not completely working in OpenGL, but I hope to have that resolved soon.
 
 ## Building
 
-After checking out to code, you will need to run `git submodule update` in both the root 
-folder and the MonoGame folder. 
+After checking out to code, you will need to run to following command to pull the
+dependencies: 
+
+* `git submodule update --init --recursive`
 
 It should build after that in Visual Studio 2019. I have not tested whether this 
 builds on non-Windows operating systems or older versions of Visual Studio yet.
