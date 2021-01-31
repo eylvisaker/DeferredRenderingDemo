@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>6efba8a9-a407-4029-bdd0-651d22a87386</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>DeferredRendererDemo.Content</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <MonoGameContentReference Include="$(MSBuildThisFileDirectory)Content\Content.mgcb" />
+    <None Include="$(MSBuildThisFileDirectory)Content\Content.mgcb" />
+    <None Include="$(MSBuildThisFileDirectory)Content\GameFont.spritefont" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\averageLuminance.hlsl" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\Background.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\BloomFilter.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\CascadeShadowMap.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\Clear.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\DirectionalLightShadow.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\Downscale.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\FillGBuffer.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\fullscreen.hlsl" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\GaussianBlur.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\PostProcess.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\LightGBuffer.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\Stats.fx" />
+    <None Include="$(MSBuildThisFileDirectory)Content\gbuffer\unpackGBuffer.hlsl" />
+  </ItemGroup>
+</Project>

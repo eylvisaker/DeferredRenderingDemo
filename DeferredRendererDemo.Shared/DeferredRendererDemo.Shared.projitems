@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>6efba8a9-a407-4029-bdd0-651d22a87386</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>DeferredRendererDemo.Shared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Cameras\Camera.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Cameras\FirstPersonCamera.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Cameras\OrthographicCamera.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Cameras\PerspectiveCamera.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Colors.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameMain.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Averager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Bloom.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Downscaler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\DrawEffect.interface.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\DrawStep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Effects\BackgroundEffect.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Effects\DirectionalLightShadowEffect.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Effects\EffectExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Effects\FillGBufferEffect.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Effects\LightGBufferEffect.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\FullScreenDraw.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\GBuffer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\GBufferInitParams.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\GBufferTargets.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\InstanceDisplay.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\LightingStep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Geometry\GeometryBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Geometry\IcosahedronBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Geometry\SimpleGeometry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Kbrd.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Lights\LightDirectional.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Lights\PointLight.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Noise.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Player.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Scenes\IcoScene.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Scenes\Scene.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UserInterface\FramesPerSecondComponent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UserInterface\GameSettingsComponent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UserInterface\GuiComponent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Scenes\Village\VillageScene.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Shadows\Cascades\CascadedShadowMapper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Shadows\Cascades\Effects\ShadowMapEffect.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Shadows\ShadowSettings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Shadows\Vector4Utility.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Sky.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VertexPositionNormalTangentsTexture.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)Properties\launchSettings.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Content\bin\Windows\Content\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Content\obj\Windows\Content\" />
+  </ItemGroup>
+</Project>
