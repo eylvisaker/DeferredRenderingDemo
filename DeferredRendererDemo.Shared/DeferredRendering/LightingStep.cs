@@ -15,7 +15,7 @@ namespace DeferredRendererDemo.DeferredRendering
     public sealed class LightingStep : IDisposable
     {
         private readonly GraphicsDevice graphics;
-        private readonly GBufferTargets targets;
+        private readonly GBuffer targets;
         private readonly FullScreenDraw fullScreen;
         private Camera camera;
         private Model sphere;
@@ -57,7 +57,7 @@ namespace DeferredRendererDemo.DeferredRendering
 
         public LightingStep(GraphicsDevice graphics,
                             ContentManager content,
-                            GBufferTargets targets,
+                            GBuffer targets,
                             FullScreenDraw fullScreen)
         {
             this.graphics = graphics;

@@ -28,7 +28,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\FullScreenDraw.cs" />
     <Compile Include="..\DeferredRendererDemo.Shared\DeferredRendering\DeferredRenderer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\GBufferInitParams.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\GBufferTargets.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\GBuffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\InstanceDisplay.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\LightingStep.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Geometry\GeometryBuilder.cs" />

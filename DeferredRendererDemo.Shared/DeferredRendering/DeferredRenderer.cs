@@ -19,7 +19,7 @@ namespace DeferredRendererDemo.DeferredRendering
         private readonly Effect postEffect;
         private readonly Effect clearEffect;
 
-        private readonly GBufferTargets targets;
+        private readonly GBuffer targets;
         private readonly LightingStep lighting;
         private readonly Downscaler downscaler;
         private readonly Bloom bloom;
@@ -58,7 +58,7 @@ namespace DeferredRendererDemo.DeferredRendering
             postEffect = content.Load<Effect>("PostProcess");
             clearEffect = content.Load<Effect>("Clear");
 
-            targets = new GBufferTargets(graphics, p);
+            targets = new GBuffer(graphics, p);
 
             lighting = new LightingStep(graphics, content, targets, fullScreen);
             downscaler = new Downscaler(graphics, content, targets, fullScreen);

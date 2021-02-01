@@ -11,14 +11,14 @@ namespace DeferredRendererDemo.DeferredRendering
     public class Downscaler
     {
         private GraphicsDevice graphics;
-        private GBufferTargets targets;
+        private GBuffer targets;
         private FullScreenDraw fullScreen;
         private Effect downscale;
         private RenderTarget2D[] renderTargets;
         Size screenSize;
         Size[] sizes;
 
-        public Downscaler(GraphicsDevice graphics, ContentManager content, GBufferTargets targets, FullScreenDraw fullScreen)
+        public Downscaler(GraphicsDevice graphics, ContentManager content, GBuffer targets, FullScreenDraw fullScreen)
         {
             this.graphics = graphics;
             this.targets = targets;

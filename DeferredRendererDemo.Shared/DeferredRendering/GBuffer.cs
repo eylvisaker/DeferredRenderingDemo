@@ -1,225 +1,92 @@
-﻿using DeferredRendererDemo.Cameras;
-using DeferredRendererDemo.DeferredRendering.Effects;
-using DeferredRendererDemo.Lights;
-using DeferredRendererDemo.Shadows;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace DeferredRendererDemo.DeferredRendering
 {
-    public class DeferredRenderer : IDisposable
+    public sealed class GBuffer : IDisposable
     {
-        private readonly FillGBufferEffect fillEffect;
-        private readonly BackgroundEffect backgroundEffect;
-        private readonly Effect postEffect;
-        private readonly Effect clearEffect;
-
-        private readonly GBufferTargets targets;
-        private readonly LightingStep lighting;
-        private readonly Downscaler downscaler;
-        private readonly Bloom bloom;
-        private readonly Averager luminanceAverager;
         private readonly GraphicsDevice graphics;
-        private readonly ContentManager content;
-        private readonly FullScreenDraw fullScreen;
+        private GBufferInitParams p;
 
-        private readonly DrawStep drawStep = new DrawStep();
+        private RenderTarget2D color, depth, normal, specular, colorAccum;
 
-        private float timeStep;
+        public RenderTarget2D Color => color;
+        public RenderTarget2D Depth => depth;
+        public RenderTarget2D Normal => normal;
+        public RenderTarget2D Specular => specular;
 
-        public BackgroundEffect BackgroundEffect => backgroundEffect;
-        public FillGBufferEffect FillEffect => fillEffect;
+        public RenderTarget2D ColorAccum => colorAccum;
 
-        private LightingStep Light => lighting;
+        public RenderTarget2D LumAccumulator { get; set; }
+        public RenderTarget2D LumStorage { get; set; }
 
-        public Matrix View => Camera.View;
-        public Matrix Projection => Camera.Projection;
-        public Vector3 EyePosition => Camera.Position;
-
-        public Camera Camera { get; set; }
-
-        public float Gamma { get; set; } = 1f;
-
-        public BloomSettings BloomSettings { get; set; } = BloomSettings.PresetSettings[0];
-
-        public DeferredRenderer(GraphicsDevice graphics, ContentManager content, GBufferInitParams p)
+        public GBuffer(GraphicsDevice graphics, GBufferInitParams p)
         {
             this.graphics = graphics;
-            this.content = content;
-            fullScreen = new FullScreenDraw(graphics);
+            this.p = p;
 
-            fillEffect = new FillGBufferEffect(content.Load<Effect>("FillGBuffer"));
-            backgroundEffect = new BackgroundEffect(content.Load<Effect>("Background"));
-            postEffect = content.Load<Effect>("PostProcess");
-            clearEffect = content.Load<Effect>("Clear");
-
-            targets = new GBufferTargets(graphics, p);
-
-            lighting = new LightingStep(graphics, content, targets, fullScreen);
-            downscaler = new Downscaler(graphics, content, targets, fullScreen);
-            bloom = new Bloom(graphics, content, fullScreen);
-
-            luminanceAverager = new Averager(graphics, content, fullScreen);
-
-            drawStep.GraphicsDevice = graphics;
+            Rebuild();
         }
 
         public void Dispose()
         {
-            Dispose(true);
+            DestroySurfaces();
         }
 
-        protected void Dispose(bool disposing)
+        public void Rebuild(GBufferInitParams newP = default)
         {
-            if (disposing)
+            p = newP ?? p;
+
+            DestroySurfaces();
+
+            int backBufferWidth = graphics.PresentationParameters.BackBufferWidth;
+            int backBufferHeight = graphics.PresentationParameters.BackBufferHeight;
+
+            color = new RenderTarget2D(graphics, backBufferWidth, backBufferHeight, false, p.Color, DepthFormat.Depth24Stencil8);
+            depth = new RenderTarget2D(graphics, backBufferWidth, backBufferHeight, false, p.Depth, DepthFormat.Depth24Stencil8);
+            normal = new RenderTarget2D(graphics, backBufferWidth, backBufferHeight, false, p.Normal, DepthFormat.Depth24Stencil8);
+            specular = new RenderTarget2D(graphics, backBufferWidth, backBufferHeight, false, p.Specular, DepthFormat.Depth24Stencil8);
+
+            colorAccum = new RenderTarget2D(graphics, backBufferWidth, backBufferHeight, false, p.ColorAccumulation, DepthFormat.None);
+
+            int width = backBufferWidth;
+            int height = backBufferHeight;
+            int steps = 0;
+
+            while (width > 4 || height > 4)
             {
-                targets.Dispose();
-                lighting.Dispose();
-            }
-        }
-
-        public void Begin(GameTime time)
-        {
-            this.timeStep = (float)time.ElapsedGameTime.TotalSeconds;
-
-            graphics.SetRenderTargets(targets.Color, targets.Depth, targets.Normal, targets.Specular);
-        }
-
-        public void DrawGeometry(Action<DrawStep> drawGeometry)
-        {
-            graphics.BlendState = BlendState.Opaque;
-            graphics.DepthStencilState = DepthStencilState.Default;
-
-            FillEffect.View = View;
-            FillEffect.Projection = Projection;
-
-            drawStep.Camera = Camera;
-            drawStep.Effect = FillEffect;
-            drawStep.ShadowCastersOnly = false;
-
-            drawGeometry(drawStep);
-        }
-
-        /// <summary>
-        /// Creates shadow maps for the specified directional light.
-        /// </summary>
-        /// <param name="sunLight"></param>
-        /// <param name="drawGeometry"></param>
-        public void ShadowMap(LightDirectional sunLight, Action<DrawStep> drawGeometry)
-        {
-            if (!sunLight.EnableShadows)
-                return;
-
-            if (sunLight.ShadowMapper == null)
-            {
-                sunLight.ShadowMapper = new CascadedShadowMapper(graphics, new ShadowSettings(), content);
+                width /= 2;
+                height /= 2;
+                steps++;
             }
 
-            drawStep.ShadowCastersOnly = true;
+            width = backBufferWidth;
+            height = backBufferHeight;
 
-            sunLight.ShadowMapper.RenderShadowMap(graphics, sunLight, Camera, (c, effect) =>
+            for (int i = 0; i < steps; i++)
             {
-                drawStep.Camera = c;
-                drawStep.Effect = effect;
-
-                drawGeometry(drawStep);
-            });
-        }
-
-        public LightingStep BeginLighting()
-        {
-            Light.Gamma = Gamma;
-
-            Light.Begin(Camera);
-
-            graphics.SetRenderTargets(targets.ColorAccum);
-            graphics.Clear(Color.Black);
-
-            BackgroundEffect.View = View;
-            BackgroundEffect.Projection = Projection;
-            BackgroundEffect.DepthTexture = targets.Depth;
-            BackgroundEffect.Gamma = Gamma;
-
-            return Light;
-        }
-
-        public void End(bool doBloom = false)
-        {
-            downscaler.Downscale();
-
-            var averageLuminance = AverageLuminance();
-
-            postEffect.Parameters["GammaReciprocal"].SetValue(1 / Gamma);
-            postEffect.Parameters["ColorTexture"].SetValue(targets.ColorAccum);
-            postEffect.Parameters["AverageLuminanceTexture"].SetValue(averageLuminance);
-            postEffect.Parameters["MiddleGrey"].SetValue(0.25f);
-            postEffect.Parameters["LumWhiteSqr"].SetValue(3f);
-
-            if (doBloom)
-            {
-                var bloomImage = this.bloom.Blur(targets.ColorAccum, BloomSettings, averageLuminance, 0.1f);
-                
-                postEffect.CurrentTechnique = postEffect.Techniques["FinalBloom"];
-
-                postEffect.Parameters["BloomIntensity"].SetValue(BloomSettings.BloomIntensity);
-                postEffect.Parameters["BaseIntensity"].SetValue(BloomSettings.BaseIntensity);
-                postEffect.Parameters["BaseSaturation"].SetValue(BloomSettings.BaseSaturation);
-                postEffect.Parameters["BloomSaturation"].SetValue(BloomSettings.BloomSaturation);
-                postEffect.Parameters["BloomTexture"].SetValue(bloomImage);
-            }
-            else
-            {
-                postEffect.CurrentTechnique = postEffect.Techniques["Final"];
+                if (width > 1) width /= 2;
+                if (height > 1) height /= 2;
             }
 
-            graphics.SetRenderTargets();
-            graphics.Clear(Color.Black);
-
-            fullScreen.Draw(postEffect);
+            LumAccumulator = new RenderTarget2D(graphics, width, height, false, SurfaceFormat.HalfVector4, DepthFormat.None);
+            LumStorage = new RenderTarget2D(graphics, width, height, false, SurfaceFormat.HalfVector4, DepthFormat.None);
         }
 
-        private Texture2D AverageLuminance()
+        private void DestroySurfaces()
         {
-            RenderTarget2D accumulator = targets.LumAccumulator;
-            RenderTarget2D a = targets.LumStorage;
+            color?.Dispose();
+            depth?.Dispose();
+            normal?.Dispose();
+            specular?.Dispose();
 
-            luminanceAverager.Accumulator = accumulator;
-            luminanceAverager.A = a;
-            luminanceAverager.B = downscaler.Largest(a.Width, a.Height);
+            colorAccum?.Dispose();
 
-            float bweight = 0.5f * timeStep;
-            float aweight = 1 - bweight;
-
-            luminanceAverager.WeightedAverage(aweight, bweight);
-
-            targets.LumStorage = accumulator;
-            targets.LumAccumulator = a;
-
-            return accumulator;
-        }
-
-        public void Clear()
-        {
-            graphics.Clear(Color.Black);
-            graphics.DepthStencilState = DepthStencilState.None;
-
-            clearEffect.CurrentTechnique = clearEffect.Techniques["Clear"];
-
-            fullScreen.Draw(clearEffect);
-        }
-
-        /// <summary>
-        /// Rebuilds the render targets. Call this when the backbuffer size changes.
-        /// </summary>
-        public void RebuildTargets()
-        {
-            targets.Rebuild();
-            downscaler.Rebuild();
+            LumAccumulator?.Dispose();
+            LumStorage?.Dispose();
         }
     }
 }
