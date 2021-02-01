@@ -1,5 +1,5 @@
 ﻿using DeferredRendererDemo.Cameras;
-using DeferredRendererDemo.GBuffers;
+using DeferredRendererDemo.DeferredRendering;
 using DeferredRendererDemo.Lights;
 using Microsoft.Xna.Framework;
 using System;

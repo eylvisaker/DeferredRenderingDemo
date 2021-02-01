@@ -1,6 +1,6 @@
 ﻿using DeferredRendererDemo.Cameras;
-using DeferredRendererDemo.GBuffers;
-using DeferredRendererDemo.GBuffers.Effects;
+using DeferredRendererDemo.DeferredRendering;
+using DeferredRendererDemo.DeferredRendering.Effects;
 using DeferredRendererDemo.Geometry;
 using DeferredRendererDemo.Lights;
 using Microsoft.Xna.Framework;

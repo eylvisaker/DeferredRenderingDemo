@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace DeferredRendererDemo.GBuffers
+namespace DeferredRendererDemo.DeferredRendering
 {
     public interface IDrawEffect : IEffectMatrices
     {

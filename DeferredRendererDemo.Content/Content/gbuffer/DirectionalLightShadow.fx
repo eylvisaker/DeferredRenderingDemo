@@ -39,12 +39,22 @@ Texture2DArray ShadowMaps : register(t4);
 
 SamplerComparisonState ShadowSampler : register(s4);
 
-
+//#if HLSL
+//SamplerComparisonState ShadowSampler : register(s4);
+//#else
+//SamplerState ShadowSampler : register(s4);
+//#endif
 
 
 float ShadowMapSampleCmpLevelZero(float2 uv, uint cascadeIdx, float z)
 { 
     return ShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(uv, cascadeIdx), z);
+    
+    //#if HLSL
+    //return ShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(uv, cascadeIdx), z);
+    //#else
+    //return z <= ShadowMaps.SampleLevel(ShadowSampler, float3(uv, cascadeIdx), 0);
+    //#endif
 }
 
 // Pixel shader.

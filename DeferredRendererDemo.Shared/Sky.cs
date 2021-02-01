@@ -1,4 +1,4 @@
-﻿using DeferredRendererDemo.GBuffers.Effects;
+﻿using DeferredRendererDemo.DeferredRendering.Effects;
 using DeferredRendererDemo.Lights;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;

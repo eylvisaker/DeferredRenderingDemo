@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace DeferredRendererDemo.GBuffers.Effects
+namespace DeferredRendererDemo.DeferredRendering.Effects
 {
     public class DirectionalLightShadowEffect : LightGBufferEffect
     {

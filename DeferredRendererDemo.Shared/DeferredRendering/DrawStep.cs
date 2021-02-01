@@ -1,12 +1,12 @@
 ﻿using DeferredRendererDemo.Cameras;
-using DeferredRendererDemo.GBuffers.Effects;
+using DeferredRendererDemo.DeferredRendering.Effects;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace DeferredRendererDemo.GBuffers
+namespace DeferredRendererDemo.DeferredRendering
 {
     public class DrawStep
     {

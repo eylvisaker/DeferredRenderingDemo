@@ -15,22 +15,22 @@
     <Compile Include="$(MSBuildThisFileDirectory)Cameras\PerspectiveCamera.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Colors.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GameMain.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Averager.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Bloom.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Downscaler.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\DrawEffect.interface.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\DrawStep.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Effects\BackgroundEffect.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Effects\DirectionalLightShadowEffect.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Effects\EffectExtensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Effects\FillGBufferEffect.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\Effects\LightGBufferEffect.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\FullScreenDraw.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\GBuffer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\GBufferInitParams.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\GBufferTargets.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\InstanceDisplay.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GBuffers\LightingStep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\Averager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\Bloom.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\Downscaler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\DrawEffect.interface.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\DrawStep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\Effects\BackgroundEffect.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\Effects\DirectionalLightShadowEffect.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\Effects\EffectExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\Effects\FillGBufferEffect.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\Effects\LightGBufferEffect.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\FullScreenDraw.cs" />
+    <Compile Include="..\DeferredRendererDemo.Shared\DeferredRendering\DeferredRenderer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\GBufferInitParams.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\GBufferTargets.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\InstanceDisplay.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeferredRendering\LightingStep.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Geometry\GeometryBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Geometry\IcosahedronBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Geometry\SimpleGeometry.cs" />
@@ -54,9 +54,5 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)Properties\launchSettings.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)Content\bin\Windows\Content\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Content\obj\Windows\Content\" />
   </ItemGroup>
 </Project>

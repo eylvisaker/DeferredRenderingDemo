@@ -2,7 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 
-namespace DeferredRendererDemo.GBuffers.Effects
+namespace DeferredRendererDemo.DeferredRendering.Effects
 {
     public class FillGBufferEffect : Effect, IEffectMatrices, IDrawEffect
     {

@@ -4,9 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace DeferredRendererDemo.GBuffers
+namespace DeferredRendererDemo.DeferredRendering
 {
-    public sealed class GBufferTargets : IDisposable
+    public sealed class GBufferTargets
+        : IDisposable
     {
         private readonly GraphicsDevice graphics;
         private GBufferInitParams p;

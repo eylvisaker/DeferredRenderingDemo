@@ -1,4 +1,4 @@
-﻿using DeferredRendererDemo.GBuffers;
+﻿using DeferredRendererDemo.DeferredRendering;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;

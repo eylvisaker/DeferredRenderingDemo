@@ -1,5 +1,5 @@
 ﻿using DeferredRendererDemo.Cameras;
-using DeferredRendererDemo.GBuffers.Effects;
+using DeferredRendererDemo.DeferredRendering.Effects;
 using DeferredRendererDemo.Lights;
 using DeferredRendererDemo.Shadows;
 using Microsoft.Xna.Framework;
@@ -10,9 +10,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace DeferredRendererDemo.GBuffers
+namespace DeferredRendererDemo.DeferredRendering
 {
-    public class GBuffer : IDisposable
+    public class DeferredRenderer : IDisposable
     {
         private readonly FillGBufferEffect fillEffect;
         private readonly BackgroundEffect backgroundEffect;
@@ -47,7 +47,7 @@ namespace DeferredRendererDemo.GBuffers
 
         public BloomSettings BloomSettings { get; set; } = BloomSettings.PresetSettings[0];
 
-        public GBuffer(GraphicsDevice graphics, ContentManager content, GBufferInitParams p)
+        public DeferredRenderer(GraphicsDevice graphics, ContentManager content, GBufferInitParams p)
         {
             this.graphics = graphics;
             this.content = content;

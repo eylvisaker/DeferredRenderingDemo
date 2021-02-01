@@ -1,5 +1,5 @@
 ﻿using DeferredRendererDemo.Cameras;
-using DeferredRendererDemo.GBuffers.Effects;
+using DeferredRendererDemo.DeferredRendering.Effects;
 using DeferredRendererDemo.Geometry;
 using DeferredRendererDemo.Lights;
 using DeferredRendererDemo.Shadows;
@@ -10,7 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace DeferredRendererDemo.GBuffers
+namespace DeferredRendererDemo.DeferredRendering
 {
     public sealed class LightingStep : IDisposable
     {

@@ -78,7 +78,7 @@ namespace DeferredRendererDemo.Shadows
                                              false,
                                              SurfaceFormat.Single,
                                              DepthFormat.Depth24,
-                                             1,
+                                             0,
                                              RenderTargetUsage.DiscardContents,
                                              false,
                                              4);

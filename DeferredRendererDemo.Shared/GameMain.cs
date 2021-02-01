@@ -1,6 +1,6 @@
 ﻿using DeferredRendererDemo.Cameras;
-using DeferredRendererDemo.GBuffers;
-using DeferredRendererDemo.GBuffers.Effects;
+using DeferredRendererDemo.DeferredRendering;
+using DeferredRendererDemo.DeferredRendering.Effects;
 using DeferredRendererDemo.Geometry;
 using DeferredRendererDemo.Lights;
 using DeferredRendererDemo.Scenes;
@@ -19,7 +19,7 @@ namespace DeferredRendererDemo
     public class GameMain : Game
     {
         private GraphicsDeviceManager _graphics;
-        private GBuffer gbuffer;
+        private DeferredRenderer renderer;
         private Sky sky;
         private List<IScene> scenes = new List<IScene>();
         private IScene scene;
@@ -29,7 +29,7 @@ namespace DeferredRendererDemo
         public Sky Sky => sky;
         public bool AnimateSun { get; set; }
         public float SunPos => sunPos;
-        public GBuffer GBuffer => gbuffer;
+        public DeferredRenderer Renderer => renderer;
 
         public IScene Scene => scene;
 
@@ -54,9 +54,9 @@ namespace DeferredRendererDemo
             this.Window.AllowUserResizing = true;
             this.Window.AllowAltF4 = true;
 
-            gbuffer = new GBuffer(GraphicsDevice,
-                                  new ContentManager(Content.ServiceProvider, Content.RootDirectory + "/gbuffer"),
-                                  new GBufferInitParams());
+            renderer = new DeferredRenderer(GraphicsDevice,
+                                           new ContentManager(Content.ServiceProvider, Content.RootDirectory + "/gbuffer"),
+                                           new GBufferInitParams());
 
             scenes.Add(new IcoScene(GraphicsDevice, Content));
             scenes.Add(new VillageScene(GraphicsDevice, Content));
@@ -64,7 +64,7 @@ namespace DeferredRendererDemo
 
             LoadContent();
 
-            Window.ClientSizeChanged += (sender, e) => gbuffer.RebuildTargets();
+            Window.ClientSizeChanged += (sender, e) => renderer.RebuildTargets();
 
             Components.Add(new FramesPerSecondComponent(this));
             Components.Add(new GameSettingsComponent(this));
@@ -80,7 +80,7 @@ namespace DeferredRendererDemo
         {
             sky = new Sky(GraphicsDevice, Content);
 
-            sky.Effect = gbuffer.BackgroundEffect;
+            sky.Effect = renderer.BackgroundEffect;
         }
 
         protected override void Update(GameTime gameTime)
@@ -119,7 +119,7 @@ namespace DeferredRendererDemo
 
         protected override void Draw(GameTime gameTime)
         {
-            if (gbuffer.FillEffect == null)
+            if (renderer.FillEffect == null)
                 return;
 
             GBufferDraw(GraphicsDevice, gameTime);
@@ -131,16 +131,16 @@ namespace DeferredRendererDemo
         {
             UpdateSky();
 
-            gbuffer.Camera = scene.Camera;
-            gbuffer.Gamma = 2.2f;
+            renderer.Camera = scene.Camera;
+            renderer.Gamma = 2.2f;
 
-            gbuffer.Begin(time);
-            gbuffer.Clear();
+            renderer.Begin(time);
+            renderer.Clear();
 
-            gbuffer.DrawGeometry(scene.Draw);
-            gbuffer.ShadowMap(sky.Sun.Light, scene.Draw);
+            renderer.DrawGeometry(scene.Draw);
+            renderer.ShadowMap(sky.Sun.Light, scene.Draw);
 
-            LightingStep lighting = gbuffer.BeginLighting();
+            LightingStep lighting = renderer.BeginLighting();
 
             lighting.AmbientAndEmissive(sky.Sun.AmbientDown, sky.Sun.AmbientUp);
             lighting.DirectionalLight(sky.Sun.Light);
@@ -148,7 +148,7 @@ namespace DeferredRendererDemo
 
             DrawSky(graphics);
 
-            gbuffer.End(doBloom: true);
+            renderer.End(doBloom: true);
         }
 
         private void UpdateSky()

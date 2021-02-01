@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace DeferredRendererDemo.GBuffers.Effects
+namespace DeferredRendererDemo.DeferredRendering.Effects
 {
     public class LightGBufferEffect : Effect
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 using DeferredRendererDemo;
-using DeferredRendererDemo.GBuffers;
+using DeferredRendererDemo.DeferredRendering;
 using DeferredRendererDemo.Shadows;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -17,7 +17,7 @@ namespace ShadowsSample.Components
         private int bloomSettingsIndex;
 
         public bool AnimateLight { get => game.AnimateSun; set => game.AnimateSun = value; }
-        public ShadowSettings ShadowSettings { get => game.Sky.Sun.Light.ShadowMapper.Settings; }
+        public ShadowSettings ShadowSettings { get => game.Sky.Sun.Light.ShadowMapper?.Settings; }
         public FixedFilterSize FixedFilterSize { get => ShadowSettings.FixedFilterSize; set => ShadowSettings.FixedFilterSize = value; }
         public bool VisualizeCascades { get => ShadowSettings.VisualizeCascades; set => ShadowSettings.VisualizeCascades = value; }
         public bool StabilizeCascades { get => ShadowSettings.StabilizeCascades; set => ShadowSettings.StabilizeCascades = value; }
@@ -108,7 +108,7 @@ namespace ShadowsSample.Components
                     bloomSettingsIndex %= BloomSettings.PresetSettings.Length;
                 }
 
-                game.GBuffer.BloomSettings = BloomSettings.PresetSettings[bloomSettingsIndex];
+                game.Renderer.BloomSettings = BloomSettings.PresetSettings[bloomSettingsIndex];
             }
 
             _lastKeyboardState = keyboardState;
@@ -120,14 +120,21 @@ namespace ShadowsSample.Components
             {
                 new GuiComponent.GuiLabelData { Name = "Animate sun? (L)", Value = AnimateLight.ToString() },
                 new GuiComponent.GuiLabelData { Name = "Reset sun position (Enter)", Value = game.SunPos.ToString("0.0000") },
-                new GuiComponent.GuiLabelData { Name = "Filter size (F)", Value = FixedFilterSize.ToString() },
-                new GuiComponent.GuiLabelData { Name = "Stabilize cascades? (C)", Value = StabilizeCascades.ToString() },
-                new GuiComponent.GuiLabelData { Name = "Visualize cascades? (V)", Value = VisualizeCascades.ToString() },
-                new GuiComponent.GuiLabelData { Name = "Filter across cascades? (K)", Value = FilterAcrossCascades.ToString() },
-                new GuiComponent.GuiLabelData { Name = "Bias (b / B)", Value = Bias.ToString() },
-                new GuiComponent.GuiLabelData { Name = "Normal offset (o / O)", Value = OffsetScale.ToString() },
-                new GuiComponent.GuiLabelData { Name = "Bloom Config (z / Z)", Value = bloomSettingsIndex.ToString() }
+                new GuiComponent.GuiLabelData { Name = "Bloom Config (z / Z)", Value = bloomSettingsIndex.ToString() },
             }, Color.FromNonPremultiplied(100, 0, 0, 150));
+
+            if (ShadowSettings != null)
+            {
+                _guiService.DrawLabels(new[]
+                {
+                    new GuiComponent.GuiLabelData { Name = "Filter size (F)", Value = FixedFilterSize.ToString() },
+                    new GuiComponent.GuiLabelData { Name = "Stabilize cascades? (C)", Value = StabilizeCascades.ToString() },
+                    new GuiComponent.GuiLabelData { Name = "Visualize cascades? (V)", Value = VisualizeCascades.ToString() },
+                    new GuiComponent.GuiLabelData { Name = "Filter across cascades? (K)", Value = FilterAcrossCascades.ToString() },
+                    new GuiComponent.GuiLabelData { Name = "Bias (b / B)", Value = Bias.ToString() },
+                    new GuiComponent.GuiLabelData { Name = "Normal offset (o / O)", Value = OffsetScale.ToString() },
+                }, Color.FromNonPremultiplied(70, 85, 100, 150));
+            }
 
             _guiService.DrawLabels(new[]
             {
