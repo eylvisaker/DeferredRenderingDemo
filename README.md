@@ -16,8 +16,6 @@ It has the following features:
 The shadows are a little unstable when the light source moves. I believe this could be fixed
 by implementing PCSS. Maybe I'll do that if I get some free time for it.
 
-Not completely working in OpenGL, but I hope to have that resolved soon.
-
 ## Building
 
 After checking out to code, you will need to run to following command to pull the
