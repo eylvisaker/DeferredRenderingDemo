@@ -58,8 +58,9 @@ namespace DeferredRendererDemo
                                            new ContentManager(Content.ServiceProvider, Content.RootDirectory + "/gbuffer"),
                                            new GBufferInitParams());
 
-            scenes.Add(new IcoScene(GraphicsDevice, Content));
             scenes.Add(new VillageScene(GraphicsDevice, Content));
+            scenes.Add(new IcoScene(GraphicsDevice, Content));
+
             scene = scenes[0];
 
             LoadContent();

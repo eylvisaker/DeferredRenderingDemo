@@ -7,6 +7,8 @@ namespace DeferredRendererDemo.Shadows
 {
     public class ShadowSettings
     {
+        private static readonly int[] KernelSizes = { 2, 3, 5, 7 };
+
         public FixedFilterSize FixedFilterSize = FixedFilterSize.Filter2x2;
         public bool VisualizeCascades = false;
         public bool StabilizeCascades = true;
@@ -20,7 +22,7 @@ namespace DeferredRendererDemo.Shadows
 
         public int FixedFilterKernelSize
         {
-            get { return (int)FixedFilterSize; }
+            get { return KernelSizes[(int)FixedFilterSize]; }
         }
 
         public ShadowSettings()

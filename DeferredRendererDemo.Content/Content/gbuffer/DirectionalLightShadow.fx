@@ -50,11 +50,11 @@ float ShadowMapSampleCmpLevelZero(float2 uv, uint cascadeIdx, float z)
 { 
     return ShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(uv, cascadeIdx), z);
     
-    //#if HLSL
-    //return ShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(uv, cascadeIdx), z);
-    //#else
-    //return z <= ShadowMaps.SampleLevel(ShadowSampler, float3(uv, cascadeIdx), 0);
-    //#endif
+//#if HLSL
+//    return ShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(uv, cascadeIdx), z);
+//#else
+//    return z <= ShadowMaps.SampleLevel(ShadowSampler, float3(uv, cascadeIdx), 0);
+//#endif
 }
 
 // Pixel shader.

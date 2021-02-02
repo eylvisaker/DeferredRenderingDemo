@@ -254,13 +254,19 @@ PSIN_Bumped vs_Bumped(VertexShaderInput_Bumped input)
     return output;
 }
 
-PSIN_Textured vs_InstanceTextured(VertexShaderInput_Textured input, float4x4 instanceTransform : BLENDWEIGHT0)
+PSIN_Textured vs_InstanceTextured(VertexShaderInput_Textured input, float4x4 _instanceTransform : BLENDWEIGHT0)
 {
     PSIN_Textured output;
     
+#if HLSL
+    float4x4 instanceTransform = transpose(_instanceTransform);
+#else
+    float4x4 instanceTransform = _instanceTransform;
+#endif
+    
     float3x3 normInstance = transpose((float3x3) instanceTransform);
     
-    float4 pos = mul(mul(input.Position, transpose(instanceTransform)), WorldViewProjection);
+    float4 pos = mul(mul(input.Position, instanceTransform), WorldViewProjection);
     
     output.Position = pos;
     output.TexCoords = input.TexCoords;
@@ -284,7 +290,7 @@ PSIN_Bumped vs_InstanceBumped(VertexShaderInput_Bumped input, float4x4 _instance
     
     float3x3 normInstance = ((float3x3) instanceTransform);
     
-    float4 pos = mul(mul(input.Position, (instanceTransform)), WorldViewProjection);
+    float4 pos = mul(mul(input.Position, instanceTransform), WorldViewProjection);
 
     output.Position = pos;
     output.TexCoords = input.TexCoords;

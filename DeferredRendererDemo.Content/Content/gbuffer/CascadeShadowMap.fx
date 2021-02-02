@@ -17,11 +17,17 @@ VSOutput vs_ShadowMap(float3 position : POSITION)
     return output;
 }
 
-VSOutput vs_ShadowMapInstance(float4 position : POSITION, float4x4 instanceTransform : BLENDWEIGHT0)
+VSOutput vs_ShadowMapInstance(float4 position : POSITION, float4x4 _instanceTransform : BLENDWEIGHT0)
 {
     VSOutput output;
     
-    float4 pos = mul(mul(position, transpose(instanceTransform)), WorldViewProjection);
+#if HLSL
+    float4x4 instanceTransform = transpose(_instanceTransform);
+#else
+    float4x4 instanceTransform = _instanceTransform;
+#endif
+    
+    float4 pos = mul(mul(position, instanceTransform), WorldViewProjection);
     
     output.position = pos;
     output.depth = output.position.zw;

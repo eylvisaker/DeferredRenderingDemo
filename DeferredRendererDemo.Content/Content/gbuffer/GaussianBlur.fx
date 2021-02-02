@@ -1,10 +1,6 @@
-﻿#if HLSL
-#define VSMODEL vs_5_0
+﻿#define VSMODEL vs_5_0
 #define PSMODEL ps_5_0
-#else
-#define VSMODEL vs_3_0
-#define PSMODEL ps_3_0
-#endif
+
 
 // Pixel shader applies a one dimensional gaussian blur filter.
 // This is used twice by the bloom postprocess, first to
